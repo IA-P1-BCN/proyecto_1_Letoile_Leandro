@@ -1,13 +1,11 @@
 "use client";
 
 import { useFrame } from "@react-three/fiber";
-import { useRef } from "react";
+import { forwardRef, useRef } from "react";
 import * as THREE from "three";
 import useTaxiControls from "./controls/TaxiControls";
 
-export default function Taxi() {
-  const taxiRef = useRef<THREE.Group>(null);
-
+const Taxi = forwardRef<THREE.Group>((_, ref) => {
   const controls = useTaxiControls();
 
   const speed = useRef(0);
@@ -19,9 +17,10 @@ export default function Taxi() {
   const rotationSpeed = 2;
 
   useFrame((_, delta) => {
-    if (!taxiRef.current) return;
+    const taxi = ref && "current" in ref ? ref.current : null;
 
-    const taxi = taxiRef.current;
+    if (!taxi) return;
+
     const input = controls.current;
 
     // --------------------------------
@@ -75,8 +74,7 @@ export default function Taxi() {
     // --------------------------------
 
     if (Math.abs(speed.current) > 0.1) {
-      const direction =
-        speed.current >= 0 ? 1 : -1;
+      const direction = speed.current >= 0 ? 1 : -1;
 
       if (input.left) {
         taxi.rotation.y +=
@@ -104,7 +102,7 @@ export default function Taxi() {
   });
 
   return (
-    <group ref={taxiRef}>
+    <group ref={ref}>
       {/* Carrocería */}
       <mesh position={[0, 0.7, 0]}>
         <boxGeometry args={[3, 0.8, 5]} />
@@ -166,4 +164,8 @@ export default function Taxi() {
       </mesh>
     </group>
   );
-}
+});
+
+Taxi.displayName = "Taxi";
+
+export default Taxi;
