@@ -24,8 +24,8 @@ export default function CameraFollow({
 
     const offset = new THREE.Vector3(
       0,
-      8,
-      12
+      6,
+      8
     );
 
     offset.applyQuaternion(taxi.quaternion);
