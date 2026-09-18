@@ -1,4 +1,4 @@
-from domain.taximeter import Taximeter
+from backend.domain.taximeter import Taximeter
 
 
 def show_instructions():

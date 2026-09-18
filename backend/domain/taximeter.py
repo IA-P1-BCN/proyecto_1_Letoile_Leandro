@@ -1,5 +1,5 @@
-from domain.ride import Ride
-from domain.state import TaxiState
+from backend.domain.ride import Ride
+from backend.domain.state import TaxiState
 
 
 RATE_STOPPED = 0.02

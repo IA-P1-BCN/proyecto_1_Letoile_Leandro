@@ -1,7 +1,7 @@
 import time
 
-from domain.taxi import Taxi
-from domain.state import TaxiState
+from backend.domain.taxi import Taxi
+from backend.domain.state import TaxiState
 
 
 class Ride:
