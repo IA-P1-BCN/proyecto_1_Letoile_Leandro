@@ -19,10 +19,15 @@ type TaxiProps = {
   controls: React.RefObject<
     TaxiControlsState | null
   >;
+
   tripActive: boolean;
+
+  visible?: boolean;
+
   onSpeedChange?: (
     speed: number
   ) => void;
+
   onVehicleStatusChange?: (
     status: VehicleStatus
   ) => void;
@@ -36,6 +41,7 @@ const Taxi = forwardRef<
     {
       controls,
       tripActive,
+      visible = true,
       onSpeedChange,
       onVehicleStatusChange,
     },
@@ -48,6 +54,22 @@ const Taxi = forwardRef<
 
     const lastVehicleStatus =
       useRef<VehicleStatus>("stopped");
+
+    // =====================================================
+    // ANIMACIÓN DE ENTRADA
+    // =====================================================
+
+    const introProgress = useRef(0);
+    const introStarted = useRef(false);
+    const introFinished = useRef(false);
+
+    const baseY = 0.25;
+    const introStartHeight = 10;
+    const introDuration = 0.95;
+
+    // =====================================================
+    // CONFIGURACIÓN DEL TAXI
+    // =====================================================
 
     const maxSpeed = 12;
     const acceleration = 8;
@@ -85,22 +107,28 @@ const Taxi = forwardRef<
     const taxiCenterZ =
       taxiBounds.center.z * modelScale;
 
-    /*
-     * Glow situado debajo del taxi.
-     */
+    // =====================================================
+    // GLOW DEL TAXI
+    // =====================================================
+
     const glowY = -0.30;
 
-    /*
-     * Glow hacia el interior del taxi.
-     */
     const frontOffset = -1.5;
     const rearOffset = 1.5;
+
+    // =====================================================
+    // RENDER ORDER
+    // =====================================================
 
     useMemo(() => {
       scene.traverse((object) => {
         object.renderOrder = 2;
       });
     }, [scene]);
+
+    // =====================================================
+    // MOVIMIENTO + ANIMACIÓN
+    // =====================================================
 
     useFrame((_, delta) => {
       const taxi =
@@ -114,18 +142,24 @@ const Taxi = forwardRef<
 
       const input = controls.current;
 
-      /*
-       * Si el viaje no está activo,
-       * el taxi permanece detenido.
-       */
+      // ===================================================
+      // VIAJE INACTIVO
+      // ===================================================
+
       if (!tripActive) {
         speed.current = 0;
+
+        introStarted.current = false;
+        introFinished.current = false;
+        introProgress.current = 0;
+
+        taxi.position.y = baseY;
+        taxi.scale.set(1, 1, 1);
 
         if (
           lastReportedSpeed.current !== 0
         ) {
           lastReportedSpeed.current = 0;
-
           onSpeedChange?.(0);
         }
 
@@ -144,9 +178,162 @@ const Taxi = forwardRef<
         return;
       }
 
-      /*
-       * ACELERACIÓN
-       */
+      // ===================================================
+      // INICIO DE LA ANIMACIÓN
+      // ===================================================
+
+      if (
+        tripActive &&
+        !introStarted.current
+      ) {
+        introStarted.current = true;
+        introFinished.current = false;
+        introProgress.current = 0;
+
+        taxi.position.y =
+          baseY + introStartHeight;
+
+        taxi.scale.set(
+          1,
+          1.08,
+          1
+        );
+      }
+
+      // ===================================================
+      // CAÍDA DEL TAXI
+      // ===================================================
+
+      if (!introFinished.current) {
+        introProgress.current +=
+          delta / introDuration;
+
+        const t =
+          THREE.MathUtils.clamp(
+            introProgress.current,
+            0,
+            1
+          );
+
+        // Ease In Out Cubic
+        const eased =
+          t < 0.5
+            ? 4 * t * t * t
+            : 1 -
+              Math.pow(
+                -2 * t + 2,
+                3
+              ) /
+                2;
+
+        taxi.position.y =
+          baseY +
+          introStartHeight *
+            (1 - eased);
+
+        // =================================================
+        // PEQUEÑA DEFORMACIÓN DURANTE LA CAÍDA
+        // =================================================
+
+        let scaleX = 1;
+        let scaleY = 1;
+        let scaleZ = 1;
+
+        if (t < 0.82) {
+          const fallAmount =
+            1 - t / 0.82;
+
+          scaleY =
+            1 +
+            fallAmount * 0.07;
+
+          scaleX =
+            1 -
+            fallAmount * 0.025;
+
+          scaleZ =
+            1 -
+            fallAmount * 0.025;
+        } else {
+          // ===============================================
+          // LANDING / BOUNCE
+          // ===============================================
+
+          const landingT =
+            (t - 0.82) / 0.18;
+
+          const bounce =
+            Math.sin(
+              landingT * Math.PI
+            );
+
+          scaleY =
+            1 -
+            bounce * 0.045;
+
+          scaleX =
+            1 +
+            bounce * 0.025;
+
+          scaleZ =
+            1 +
+            bounce * 0.025;
+        }
+
+        taxi.scale.set(
+          scaleX,
+          scaleY,
+          scaleZ
+        );
+
+        // ===============================================
+        // FINAL DE LA ANIMACIÓN
+        // ===============================================
+
+        if (t >= 1) {
+          introFinished.current = true;
+
+          taxi.position.y = baseY;
+
+          taxi.scale.set(
+            1,
+            1,
+            1
+          );
+        }
+
+        // ===============================================
+        // NO PERMITIR MOVIMIENTO DURANTE LA CAÍDA
+        // ===============================================
+
+        speed.current = 0;
+
+        if (
+          lastReportedSpeed.current !== 0
+        ) {
+          lastReportedSpeed.current = 0;
+          onSpeedChange?.(0);
+        }
+
+        if (
+          lastVehicleStatus.current !==
+          "stopped"
+        ) {
+          lastVehicleStatus.current =
+            "stopped";
+
+          onVehicleStatusChange?.(
+            "stopped"
+          );
+        }
+
+        return;
+      }
+
+      // ===================================================
+      // ACELERACIÓN
+      // ===================================================
+
       if (
         input.forward &&
         !input.brake
@@ -155,9 +342,10 @@ const Taxi = forwardRef<
           acceleration * delta;
       }
 
-      /*
-       * FRENO
-       */
+      // ===================================================
+      // FRENO
+      // ===================================================
+
       if (input.brake) {
         speed.current = Math.max(
           0,
@@ -166,9 +354,10 @@ const Taxi = forwardRef<
         );
       }
 
-      /*
-       * FRICCIÓN NATURAL
-       */
+      // ===================================================
+      // FRICCIÓN NATURAL
+      // ===================================================
+
       if (
         !input.forward &&
         !input.brake
@@ -180,9 +369,10 @@ const Taxi = forwardRef<
         );
       }
 
-      /*
-       * Limitar velocidad máxima.
-       */
+      // ===================================================
+      // VELOCIDAD MÁXIMA
+      // ===================================================
+
       speed.current =
         THREE.MathUtils.clamp(
           speed.current,
@@ -190,9 +380,10 @@ const Taxi = forwardRef<
           maxSpeed
         );
 
-      /*
-       * Comunicar velocidad.
-       */
+      // ===================================================
+      // COMUNICAR VELOCIDAD
+      // ===================================================
+
       if (
         speed.current === 0 ||
         Math.abs(
@@ -208,9 +399,10 @@ const Taxi = forwardRef<
         );
       }
 
-      /*
-       * Estado según velocidad real.
-       */
+      // ===================================================
+      // ESTADO SEGÚN VELOCIDAD REAL
+      // ===================================================
+
       const currentVehicleStatus =
         speed.current > 0.1
           ? "moving"
@@ -228,9 +420,10 @@ const Taxi = forwardRef<
         );
       }
 
-      /*
-       * GIRO
-       */
+      // ===================================================
+      // GIRO
+      // ===================================================
+
       if (speed.current > 0.1) {
         if (input.left) {
           taxi.rotation.y +=
@@ -243,9 +436,10 @@ const Taxi = forwardRef<
         }
       }
 
-      /*
-       * MOVIMIENTO
-       */
+      // ===================================================
+      // MOVIMIENTO
+      // ===================================================
+
       if (speed.current > 0) {
         const forward =
           new THREE.Vector3(
@@ -268,14 +462,19 @@ const Taxi = forwardRef<
     return (
       <group
         ref={ref}
-        position={[-1, 0.25, 76]}
+        position={[-1, baseY, 76]}
+        visible={visible}
       >
         {/* =====================================================
             GLOW DELANTERO - IZQUIERDO
         ====================================================== */}
 
         <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
+          rotation={[
+            -Math.PI / 2,
+            0,
+            0,
+          ]}
           position={[
             taxiCenterX - 1.35,
             glowY,
@@ -291,12 +490,15 @@ const Taxi = forwardRef<
             transparent
             depthWrite={false}
             depthTest={true}
-            blending={THREE.AdditiveBlending}
+            blending={
+              THREE.AdditiveBlending
+            }
             uniforms={{
               color: {
-                value: new THREE.Color(
-                  "#8b5cf6"
-                ),
+                value:
+                  new THREE.Color(
+                    "#8b5cf6"
+                  ),
               },
             }}
             vertexShader={`
@@ -313,33 +515,18 @@ const Taxi = forwardRef<
             `}
             fragmentShader={`
               uniform vec3 color;
-
               varying vec2 vUv;
 
               void main() {
-
-                /*
-                 * Coordenadas centradas.
-                 */
                 vec2 p =
                   vUv - vec2(0.5);
 
-                /*
-                 * Escalado horizontal
-                 * para crear una forma alargada.
-                 */
                 p.x *= 0.30;
                 p.y *= 0.95;
 
-                /*
-                 * Distancia al centro.
-                 */
                 float d =
                   length(p);
 
-                /*
-                 * Glow radial suave.
-                 */
                 float radialGlow =
                   1.0 -
                   smoothstep(
@@ -348,14 +535,6 @@ const Taxi = forwardRef<
                     d
                   );
 
-                /*
-                 * Extremos redondeados.
-                 *
-                 * En lugar de cortar
-                 * bruscamente el plano,
-                 * hacemos que desaparezca
-                 * progresivamente.
-                 */
                 float roundedEnds =
                   1.0 -
                   smoothstep(
@@ -364,12 +543,6 @@ const Taxi = forwardRef<
                     abs(p.y)
                   );
 
-                /*
-                 * Redondeo lateral.
-                 *
-                 * Evita que queden
-                 * esquinas rectas.
-                 */
                 float roundedSides =
                   1.0 -
                   smoothstep(
@@ -378,32 +551,17 @@ const Taxi = forwardRef<
                     abs(p.x)
                   );
 
-                /*
-                 * Combinamos las máscaras.
-                 */
                 float glow =
                   radialGlow *
                   roundedEnds *
                   roundedSides;
 
-                /*
-                 * Hace la transición
-                 * todavía más suave.
-                 */
                 glow =
                   pow(glow, 1.65);
 
-                /*
-                 * Intensidad final.
-                 */
                 float alpha =
                   glow * 0.20;
 
-                /*
-                 * El fragmento desaparece
-                 * completamente fuera
-                 * de la forma.
-                 */
                 if (alpha < 0.003) {
                   discard;
                 }
@@ -423,7 +581,11 @@ const Taxi = forwardRef<
         ====================================================== */}
 
         <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
+          rotation={[
+            -Math.PI / 2,
+            0,
+            0,
+          ]}
           position={[
             taxiCenterX + 1.35,
             glowY,
@@ -439,12 +601,15 @@ const Taxi = forwardRef<
             transparent
             depthWrite={false}
             depthTest={true}
-            blending={THREE.AdditiveBlending}
+            blending={
+              THREE.AdditiveBlending
+            }
             uniforms={{
               color: {
-                value: new THREE.Color(
-                  "#8b5cf6"
-                ),
+                value:
+                  new THREE.Color(
+                    "#8b5cf6"
+                  ),
               },
             }}
             vertexShader={`
@@ -461,7 +626,6 @@ const Taxi = forwardRef<
             `}
             fragmentShader={`
               uniform vec3 color;
-
               varying vec2 vUv;
 
               void main() {
@@ -528,7 +692,11 @@ const Taxi = forwardRef<
         ====================================================== */}
 
         <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
+          rotation={[
+            -Math.PI / 2,
+            0,
+            0,
+          ]}
           position={[
             taxiCenterX - 1.35,
             glowY,
@@ -544,12 +712,15 @@ const Taxi = forwardRef<
             transparent
             depthWrite={false}
             depthTest={true}
-            blending={THREE.AdditiveBlending}
+            blending={
+              THREE.AdditiveBlending
+            }
             uniforms={{
               color: {
-                value: new THREE.Color(
-                  "#8b5cf6"
-                ),
+                value:
+                  new THREE.Color(
+                    "#8b5cf6"
+                  ),
               },
             }}
             vertexShader={`
@@ -566,7 +737,6 @@ const Taxi = forwardRef<
             `}
             fragmentShader={`
               uniform vec3 color;
-
               varying vec2 vUv;
 
               void main() {
@@ -633,7 +803,11 @@ const Taxi = forwardRef<
         ====================================================== */}
 
         <mesh
-          rotation={[-Math.PI / 2, 0, 0]}
+          rotation={[
+            -Math.PI / 2,
+            0,
+            0,
+          ]}
           position={[
             taxiCenterX + 1.35,
             glowY,
@@ -649,12 +823,15 @@ const Taxi = forwardRef<
             transparent
             depthWrite={false}
             depthTest={true}
-            blending={THREE.AdditiveBlending}
+            blending={
+              THREE.AdditiveBlending
+            }
             uniforms={{
               color: {
-                value: new THREE.Color(
-                  "#8b5cf6"
-                ),
+                value:
+                  new THREE.Color(
+                    "#8b5cf6"
+                  ),
               },
             }}
             vertexShader={`
@@ -671,7 +848,6 @@ const Taxi = forwardRef<
             `}
             fragmentShader={`
               uniform vec3 color;
-
               varying vec2 vUv;
 
               void main() {

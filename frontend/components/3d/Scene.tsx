@@ -41,6 +41,12 @@ export default function Scene() {
   const [tripState, setTripState] =
     useState<TripState>("idle");
 
+  /*
+   * =====================================
+   * INICIAR VIAJE
+   * =====================================
+   */
+
   const handleStart = () => {
     if (
       tripState !== "idle" &&
@@ -52,8 +58,15 @@ export default function Scene() {
     setAmount(0);
     setSpeed(0);
     setVehicleStatus("stopped");
+
     setTripState("running");
   };
+
+  /*
+   * =====================================
+   * FINALIZAR VIAJE
+   * =====================================
+   */
 
   const handleFinish = () => {
     if (tripState !== "running") {
@@ -62,13 +75,26 @@ export default function Scene() {
 
     setSpeed(0);
     setVehicleStatus("stopped");
+
     setTripState("finished");
   };
+
+  /*
+   * =====================================
+   * CONTROLES
+   * =====================================
+   */
 
   const controls = useTaxiControls({
     onStart: handleStart,
     onFinish: handleFinish,
   });
+
+  /*
+   * =====================================
+   * ESTADO DEL TAXÍMETRO
+   * =====================================
+   */
 
   const status: TaxiStatus =
     tripState === "finished"
@@ -78,6 +104,12 @@ export default function Scene() {
         : vehicleStatus === "moving"
           ? "moving"
           : "stopped";
+
+  /*
+   * =====================================
+   * CÁLCULO DEL IMPORTE
+   * =====================================
+   */
 
   useEffect(() => {
     if (tripState !== "running") {
@@ -101,33 +133,77 @@ export default function Scene() {
     return () => {
       clearInterval(interval);
     };
-  }, [tripState, vehicleStatus]);
+  }, [
+    tripState,
+    vehicleStatus,
+  ]);
 
   return (
     <>
       <Canvas
         camera={{
-          position: [0, 10, 50],
+          /*
+           * CÁMARA INICIAL
+           *
+           * Se coloca detrás de donde
+           * estará el taxi.
+           */
+          position: [
+            -1,
+            4.5,
+            86,
+          ],
+
           fov: 65,
+
           near: 0.1,
+
           far: 180,
         }}
       >
+        {/* ================================= */}
+        {/* FONDO */}
+        {/* ================================= */}
+
         <color
           attach="background"
           args={["#07111f"]}
         />
 
-        <ambientLight intensity={1.2} />
+        {/* ================================= */}
+        {/* ILUMINACIÓN */}
+        {/* ================================= */}
+
+        <ambientLight
+          intensity={1.2}
+        />
 
         <directionalLight
-          position={[30, 40, 20]}
+          position={[
+            30,
+            40,
+            20,
+          ]}
           intensity={1.4}
         />
 
+        {/* ================================= */}
+        {/* MUNDO */}
+        {/* ================================= */}
+
         <World />
 
-        <StartInstructions visible />
+        {/* ================================= */}
+        {/* CARTEL DE INICIO */}
+        {/* ================================= */}
+
+        <StartInstructions
+          visible={true}
+        />
+
+        {/* ================================= */}
+        {/* TAXI */}
+        {/* ================================= */}
 
         <Taxi
           ref={taxiRef}
@@ -135,19 +211,35 @@ export default function Scene() {
           tripActive={
             tripState === "running"
           }
-          onSpeedChange={setSpeed}
+          visible={
+            tripState !== "idle"
+          }
+          onSpeedChange={
+            setSpeed
+          }
           onVehicleStatusChange={
             setVehicleStatus
           }
         />
+
+        {/* ================================= */}
+        {/* CÁMARA */}
+        {/* ================================= */}
 
         <CameraFollow
           target={taxiRef}
           started={
             tripState === "running"
           }
+          intro={
+            tripState === "idle"
+          }
         />
       </Canvas>
+
+      {/* ================================= */}
+      {/* TAXÍMETRO */}
+      {/* ================================= */}
 
       <Taximeter
         amount={amount}

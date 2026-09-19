@@ -6,23 +6,32 @@ import {
 } from "@react-three/fiber";
 
 import { useRef } from "react";
+
 import * as THREE from "three";
 
 type CameraFollowProps = {
   target: React.RefObject<
     THREE.Group | null
   >;
+
   started: boolean;
+
+  intro: boolean;
 };
 
 export default function CameraFollow({
   target,
   started,
+  intro,
 }: CameraFollowProps) {
   const { camera } = useThree();
 
   const currentPosition = useRef(
-    new THREE.Vector3()
+    new THREE.Vector3(
+      -1,
+      4.2,
+      82
+    )
   );
 
   const targetPosition = useRef(
@@ -38,6 +47,44 @@ export default function CameraFollow({
   );
 
   useFrame((_, delta) => {
+    /*
+     * ESTADO INICIAL
+     *
+     * La cámara permanece detrás de la posición
+     * original del taxi y mira hacia el cartel.
+     *
+     * Se acerca un poco respecto a la versión anterior.
+     */
+    if (intro) {
+      targetPosition.current.set(
+        -1,
+        4.2,
+        82
+      );
+
+      const smoothFactor =
+        1 - Math.exp(
+          -8 * delta
+        );
+
+      currentPosition.current.lerp(
+        targetPosition.current,
+        smoothFactor
+      );
+
+      camera.position.copy(
+        currentPosition.current
+      );
+
+      camera.lookAt(
+        -1,
+        1.5,
+        64
+      );
+
+      return;
+    }
+
     const taxi = target.current;
 
     if (!taxi) {
@@ -45,8 +92,7 @@ export default function CameraFollow({
     }
 
     /*
-     * Dirección hacia la que mira el taxi.
-     * El taxi utiliza -Z como dirección frontal.
+     * DIRECCIÓN DEL TAXI
      */
     forward.current.set(
       0,
@@ -59,12 +105,7 @@ export default function CameraFollow({
     );
 
     /*
-     * Vector lateral del taxi.
-     *
-     * Esto es importante:
-     * ya no usamos el eje X global.
-     * La cámara se coloca respecto
-     * a la orientación actual del taxi.
+     * LATERAL DEL TAXI
      */
     right.current.set(
       1,
@@ -77,26 +118,18 @@ export default function CameraFollow({
     );
 
     /*
-     * Distancia de seguimiento.
+     * DISTANCIA DE LA CÁMARA
      */
-    const distance = started
-      ? 10
-      : 18;
+    const distance = 10;
+    const height = 4;
 
-    /*
-     * Altura de la cámara.
-     */
-    const height = started
-      ? 4
-      : 6;
-
-    /*
-     * Posición detrás del taxi.
-     */
     targetPosition.current.copy(
       taxi.position
     );
 
+    /*
+     * Nos colocamos detrás del taxi.
+     */
     targetPosition.current.addScaledVector(
       forward.current,
       -distance
@@ -104,42 +137,35 @@ export default function CameraFollow({
 
     /*
      * Pequeño desplazamiento lateral.
-     *
-     * Ahora es relativo al taxi.
-     * Si el taxi gira, este desplazamiento
-     * gira con él.
      */
     targetPosition.current.addScaledVector(
       right.current,
       1
     );
 
-    /*
-     * Altura.
-     */
     targetPosition.current.y +=
       height;
 
     /*
-     * Suavizado del movimiento.
+     * Suavizado del seguimiento.
      */
     const smoothFactor =
-      1 - Math.exp(-6 * delta);
+      1 - Math.exp(
+        -6 * delta
+      );
 
     currentPosition.current.lerp(
       targetPosition.current,
       smoothFactor
     );
 
-    /*
-     * Aplicamos la posición final.
-     */
     camera.position.copy(
       currentPosition.current
     );
 
     /*
-     * La cámara siempre mira al taxi.
+     * La cámara mira ligeramente por encima
+     * del centro del taxi.
      */
     camera.lookAt(
       taxi.position.x,

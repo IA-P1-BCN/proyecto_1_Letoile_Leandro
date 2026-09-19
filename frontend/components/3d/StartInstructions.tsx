@@ -1,6 +1,7 @@
 "use client";
 
 import { RoundedBox, Text } from "@react-three/drei";
+
 import * as THREE from "three";
 
 type StartInstructionsProps = {
@@ -29,7 +30,8 @@ function ArrowKey({
   shape.lineTo(0.38, 0.05);
   shape.closePath();
 
-  const geometry = new THREE.ShapeGeometry(shape);
+  const geometry =
+    new THREE.ShapeGeometry(shape);
 
   let rotation = 0;
 
@@ -120,7 +122,11 @@ function CommandKey({
       </RoundedBox>
 
       <RoundedBox
-        args={[width - 0.18, 0.87, 0.05]}
+        args={[
+          width - 0.18,
+          0.87,
+          0.05,
+        ]}
         radius={0.19}
         smoothness={6}
         position={[0, 0, 0.1]}
@@ -135,7 +141,11 @@ function CommandKey({
 
       <Text
         position={[0, 0, 0.18]}
-        fontSize={label === "SPACE" ? 0.58 : 0.62}
+        fontSize={
+          label === "SPACE"
+            ? 0.58
+            : 0.62
+        }
         color={color}
         anchorX="center"
         anchorY="middle"
@@ -238,7 +248,9 @@ type TitleProps = {
   position: [number, number, number];
 };
 
-function Title({ position }: TitleProps) {
+function Title({
+  position,
+}: TitleProps) {
   return (
     <group position={position}>
       <Text
@@ -312,14 +324,21 @@ function Title({ position }: TitleProps) {
 export default function StartInstructions({
   visible = true,
 }: StartInstructionsProps) {
-  if (!visible) return null;
+  if (!visible) {
+    return null;
+  }
 
   return (
     <group
-      position={[0, 4.8, 63]}
+      position={[
+        0,
+        5.15,
+        63,
+      ]}
       scale={1.5625}
     >
       {/* PANEL PRINCIPAL */}
+
       <RoundedBox
         args={[17, 8.4, 0.3]}
         radius={0.45}
@@ -336,8 +355,13 @@ export default function StartInstructions({
       </RoundedBox>
 
       {/* PANEL INTERIOR */}
+
       <RoundedBox
-        args={[16.55, 7.95, 0.08]}
+        args={[
+          16.55,
+          7.95,
+          0.08,
+        ]}
         radius={0.35}
         smoothness={6}
         position={[0, 0, -0.02]}
@@ -351,39 +375,66 @@ export default function StartInstructions({
       </RoundedBox>
 
       {/* TITULO */}
-      <Title position={[0, 2.75, 0.18]} />
+
+      <Title
+        position={[
+          0,
+          2.75,
+          0.18,
+        ]}
+      />
 
       {/* ========================= */}
       {/* BLOQUE DE COMANDOS */}
       {/* ========================= */}
 
       {/* ENTER */}
+
       <CommandKey
-        position={[-2.7, 0.85, 0.18]}
+        position={[
+          -2.7,
+          0.85,
+          0.18,
+        ]}
         label="ENTER"
         color="#facc15"
         width={2.75}
       />
 
       {/* INICIAR VIAJE */}
+
       <ActionLabel
-        position={[-2.7, -0.32, 0.18]}
+        position={[
+          -2.7,
+          -0.32,
+          0.18,
+        ]}
         color="#facc15"
       >
         INICIAR VIAJE
       </ActionLabel>
 
       {/* SPACE */}
+
       <CommandKey
-        position={[-2.7, -1.65, 0.18]}
+        position={[
+          -2.7,
+          -1.65,
+          0.18,
+        ]}
         label="SPACE"
         color="#fb923c"
         width={2.85}
       />
 
       {/* FINALIZAR VIAJE */}
+
       <ActionLabel
-        position={[-2.7, -2.82, 0.18]}
+        position={[
+          -2.7,
+          -2.82,
+          0.18,
+        ]}
         color="#fb923c"
       >
         FINALIZAR VIAJE
@@ -394,29 +445,49 @@ export default function StartInstructions({
       {/* ========================= */}
 
       {/* ARRIBA */}
+
       <ArrowKey
-        position={[4.25, 0.65, 0.18]}
+        position={[
+          4.25,
+          0.65,
+          0.18,
+        ]}
         direction="up"
         color="#4ade80"
       />
 
       {/* IZQUIERDA */}
+
       <ArrowKey
-        position={[3.35, -0.85, 0.18]}
+        position={[
+          3.35,
+          -0.85,
+          0.18,
+        ]}
         direction="left"
         color="#c4b5fd"
       />
 
       {/* DERECHA */}
+
       <ArrowKey
-        position={[5.15, -0.85, 0.18]}
+        position={[
+          5.15,
+          -0.85,
+          0.18,
+        ]}
         direction="right"
         color="#c4b5fd"
       />
 
       {/* ABAJO / FRENO */}
+
       <ArrowKey
-        position={[4.25, -2.25, 0.18]}
+        position={[
+          4.25,
+          -2.25,
+          0.18,
+        ]}
         direction="down"
         color="#ef4444"
       />
