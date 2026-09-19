@@ -7,16 +7,33 @@ import { useGLTF } from "@react-three/drei";
 
 import type { TaxiControlsState } from "./controls/TaxiControls";
 
+export type VehicleStatus = "stopped" | "moving";
+
 type TaxiProps = {
   controls: React.RefObject<TaxiControlsState | null>;
   tripActive: boolean;
   onSpeedChange?: (speed: number) => void;
+  onVehicleStatusChange?: (
+    status: VehicleStatus
+  ) => void;
 };
 
 const Taxi = forwardRef<THREE.Group, TaxiProps>(
-  ({ controls, tripActive, onSpeedChange }, ref) => {
+  (
+    {
+      controls,
+      tripActive,
+      onSpeedChange,
+      onVehicleStatusChange,
+    },
+    ref
+  ) => {
     const speed = useRef(0);
+
     const lastReportedSpeed = useRef(0);
+
+    const lastVehicleStatus =
+      useRef<VehicleStatus>("stopped");
 
     const maxSpeed = 12;
     const acceleration = 8;
@@ -24,22 +41,26 @@ const Taxi = forwardRef<THREE.Group, TaxiProps>(
     const friction = 4;
     const rotationSpeed = 2;
 
-    const { scene } = useGLTF("/models/taxi/taxi.glb");
+    const { scene } = useGLTF(
+      "/models/taxi/taxi.glb"
+    );
 
     useFrame((_, delta) => {
       const taxi =
-        ref && "current" in ref ? ref.current : null;
+        ref && "current" in ref
+          ? ref.current
+          : null;
 
-      if (!taxi) return;
+      if (!taxi) {
+        return;
+      }
 
       const input = controls.current;
 
       /*
-       * ==================================================
-       * VIAJE INACTIVO
-       * ==================================================
+       * Si no hay un viaje activo,
+       * el taxi permanece detenido.
        */
-
       if (!tripActive) {
         speed.current = 0;
 
@@ -48,80 +69,127 @@ const Taxi = forwardRef<THREE.Group, TaxiProps>(
           onSpeedChange?.(0);
         }
 
+        if (
+          lastVehicleStatus.current !==
+          "stopped"
+        ) {
+          lastVehicleStatus.current =
+            "stopped";
+
+          onVehicleStatusChange?.(
+            "stopped"
+          );
+        }
+
         return;
       }
 
       /*
-       * ==================================================
        * ACELERACIÓN
-       * ==================================================
+       *
+       * ArrowUp aumenta la velocidad.
        */
-
       if (input.forward && !input.brake) {
-        speed.current += acceleration * delta;
+        speed.current +=
+          acceleration * delta;
       }
 
       /*
-       * ==================================================
-       * FRENADO
-       * ==================================================
+       * FRENO
+       *
+       * ArrowDown reduce la velocidad.
+       * Nunca permite velocidad negativa.
        */
-
       if (input.brake) {
         speed.current = Math.max(
           0,
-          speed.current - braking * delta
+          speed.current -
+            braking * delta
         );
       }
 
       /*
-       * ==================================================
        * FRICCIÓN
-       * ==================================================
+       *
+       * Si soltamos ArrowUp y no estamos
+       * frenando, el taxi sigue avanzando
+       * pero pierde velocidad gradualmente.
        */
-
-      if (!input.forward && !input.brake) {
+      if (
+        !input.forward &&
+        !input.brake
+      ) {
         speed.current = Math.max(
           0,
-          speed.current - friction * delta
+          speed.current -
+            friction * delta
         );
       }
 
       /*
-       * ==================================================
-       * LIMITAR VELOCIDAD
-       * ==================================================
-       *
-       * Nunca permitimos velocidad negativa.
+       * Limitar velocidad.
        */
-
-      speed.current = THREE.MathUtils.clamp(
-        speed.current,
-        0,
-        maxSpeed
-      );
+      speed.current =
+        THREE.MathUtils.clamp(
+          speed.current,
+          0,
+          maxSpeed
+        );
 
       /*
-       * ==================================================
-       * REPORTAR VELOCIDAD
-       * ==================================================
+       * Informar cambios de velocidad.
+       *
+       * Cuando llega exactamente a 0,
+       * también notificamos el cambio.
        */
-
       if (
+        speed.current === 0 ||
         Math.abs(
-          speed.current - lastReportedSpeed.current
+          speed.current -
+            lastReportedSpeed.current
         ) > 0.1
       ) {
-        lastReportedSpeed.current = speed.current;
-        onSpeedChange?.(speed.current);
+        lastReportedSpeed.current =
+          speed.current;
+
+        onSpeedChange?.(
+          speed.current
+        );
       }
 
       /*
-       * ==================================================
-       * DIRECCIÓN
-       * ==================================================
+       * ESTADO REAL DEL VEHÍCULO
+       *
+       * No depende de ArrowUp.
+       * Depende de la velocidad real.
        */
+      const currentVehicleStatus: VehicleStatus =
+        speed.current > 0.1
+          ? "moving"
+          : "stopped";
 
+      /*
+       * Solo notificamos cuando
+       * realmente cambia el estado.
+       */
+      if (
+        currentVehicleStatus !==
+        lastVehicleStatus.current
+      ) {
+        lastVehicleStatus.current =
+          currentVehicleStatus;
+
+        onVehicleStatusChange?.(
+          currentVehicleStatus
+        );
+      }
+
+      /*
+       * GIRO
+       *
+       * Solo gira cuando el taxi
+       * está realmente en movimiento.
+       */
       if (speed.current > 0.1) {
         if (input.left) {
           taxi.rotation.y +=
@@ -135,17 +203,15 @@ const Taxi = forwardRef<THREE.Group, TaxiProps>(
       }
 
       /*
-       * ==================================================
        * MOVIMIENTO
-       * ==================================================
        */
-
       if (speed.current > 0) {
-        const forward = new THREE.Vector3(
-          0,
-          0,
-          -1
-        );
+        const forward =
+          new THREE.Vector3(
+            0,
+            0,
+            -1
+          );
 
         forward.applyQuaternion(
           taxi.quaternion
@@ -174,6 +240,8 @@ const Taxi = forwardRef<THREE.Group, TaxiProps>(
 
 Taxi.displayName = "Taxi";
 
-useGLTF.preload("/models/taxi/taxi.glb");
+useGLTF.preload(
+  "/models/taxi/taxi.glb"
+);
 
 export default Taxi;

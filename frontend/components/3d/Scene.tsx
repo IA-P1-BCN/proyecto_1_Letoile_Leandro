@@ -4,7 +4,10 @@ import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-import Taxi from "./Taxi";
+import Taxi, {
+  type VehicleStatus,
+} from "./Taxi";
+
 import World from "./World";
 import CameraFollow from "./CameraFollow";
 import Taximeter from "./Taximeter";
@@ -23,14 +26,24 @@ type TaxiStatus =
   | "finished";
 
 export default function Scene() {
-  const taxiRef = useRef<THREE.Group>(null);
+  const taxiRef =
+    useRef<THREE.Group>(null);
 
-  const [speed, setSpeed] = useState(0);
-  const [amount, setAmount] = useState(0);
+  const [speed, setSpeed] =
+    useState(0);
+
+  const [vehicleStatus, setVehicleStatus] =
+    useState<VehicleStatus>("stopped");
+
+  const [amount, setAmount] =
+    useState(0);
 
   const [tripState, setTripState] =
     useState<TripState>("idle");
 
+  /*
+   * INICIAR / REINICIAR VIAJE
+   */
   const handleStart = () => {
     if (
       tripState !== "idle" &&
@@ -41,37 +54,59 @@ export default function Scene() {
 
     setAmount(0);
     setSpeed(0);
+    setVehicleStatus("stopped");
     setTripState("running");
   };
 
-  const handleStop = () => {
-    setSpeed(0);
-  };
-
+  /*
+   * FINALIZAR VIAJE
+   */
   const handleFinish = () => {
     if (tripState !== "running") {
       return;
     }
 
     setSpeed(0);
+    setVehicleStatus("stopped");
     setTripState("finished");
   };
 
+  /*
+   * CONTROLES DE TECLADO
+   *
+   * Este hook solo conoce las teclas.
+   * No decide la tarifa.
+   */
   const controls = useTaxiControls({
     onStart: handleStart,
-    onStop: handleStop,
     onFinish: handleFinish,
   });
 
+  /*
+   * ESTADO VISUAL DEL TAXÍMETRO
+   */
   const status: TaxiStatus =
     tripState === "finished"
       ? "finished"
       : tripState === "idle"
         ? "idle"
-        : Math.abs(speed) > 0.1
+        : vehicleStatus === "moving"
           ? "moving"
           : "stopped";
 
+  /*
+   * COBRO
+   *
+   * IMPORTANTE:
+   *
+   * No miramos ArrowUp.
+   * No miramos ArrowDown.
+   *
+   * Miramos el ESTADO REAL DEL VEHÍCULO.
+   *
+   * moving  → 0.05 €/s
+   * stopped → 0.02 €/s
+   */
   useEffect(() => {
     if (tripState !== "running") {
       return;
@@ -80,10 +115,15 @@ export default function Scene() {
     const interval = setInterval(() => {
       setAmount((currentAmount) => {
         const pricePerSecond =
-          Math.abs(speed) > 0.1
+          vehicleStatus === "moving"
             ? 0.05
             : 0.02;
 
+        /*
+         * El intervalo corre cada 100 ms,
+         * por eso cobramos 1/10 de la tarifa
+         * correspondiente a un segundo.
+         */
         return (
           currentAmount +
           pricePerSecond * 0.1
@@ -94,7 +134,7 @@ export default function Scene() {
     return () => {
       clearInterval(interval);
     };
-  }, [tripState, speed]);
+  }, [tripState, vehicleStatus]);
 
   return (
     <>
@@ -130,22 +170,25 @@ export default function Scene() {
 
         <World />
 
-        {/* 
-          El cartel forma parte del mundo 3D.
-          Permanece visible durante todo el viaje.
-        */}
         <StartInstructions visible />
 
         <Taxi
           ref={taxiRef}
           controls={controls}
-          tripActive={tripState === "running"}
+          tripActive={
+            tripState === "running"
+          }
           onSpeedChange={setSpeed}
+          onVehicleStatusChange={
+            setVehicleStatus
+          }
         />
 
         <CameraFollow
           target={taxiRef}
-          started={tripState === "running"}
+          started={
+            tripState === "running"
+          }
         />
       </Canvas>
 
