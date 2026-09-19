@@ -1,7 +1,7 @@
 "use client";
 
+import { useMemo } from "react";
 import { useGLTF } from "@react-three/drei";
-import * as THREE from "three";
 
 type RoadSegmentProps = {
   position?: [number, number, number];
@@ -14,9 +14,14 @@ export default function RoadSegment({
   rotation = [0, 0, 0],
   scale = 1,
 }: RoadSegmentProps) {
-  const { scene } = useGLTF("/models/road/road.glb");
+  const { scene } = useGLTF(
+    "/models/road/road.glb"
+  );
 
-  const clonedScene = scene.clone();
+  const clonedScene = useMemo(
+    () => scene.clone(),
+    [scene]
+  );
 
   return (
     <primitive
@@ -28,4 +33,6 @@ export default function RoadSegment({
   );
 }
 
-useGLTF.preload("/models/road/road.glb");
+useGLTF.preload(
+  "/models/road/road.glb"
+);

@@ -41,9 +41,6 @@ export default function Scene() {
   const [tripState, setTripState] =
     useState<TripState>("idle");
 
-  /*
-   * INICIAR / REINICIAR VIAJE
-   */
   const handleStart = () => {
     if (
       tripState !== "idle" &&
@@ -58,9 +55,6 @@ export default function Scene() {
     setTripState("running");
   };
 
-  /*
-   * FINALIZAR VIAJE
-   */
   const handleFinish = () => {
     if (tripState !== "running") {
       return;
@@ -71,20 +65,11 @@ export default function Scene() {
     setTripState("finished");
   };
 
-  /*
-   * CONTROLES DE TECLADO
-   *
-   * Este hook solo conoce las teclas.
-   * No decide la tarifa.
-   */
   const controls = useTaxiControls({
     onStart: handleStart,
     onFinish: handleFinish,
   });
 
-  /*
-   * ESTADO VISUAL DEL TAXÍMETRO
-   */
   const status: TaxiStatus =
     tripState === "finished"
       ? "finished"
@@ -94,19 +79,6 @@ export default function Scene() {
           ? "moving"
           : "stopped";
 
-  /*
-   * COBRO
-   *
-   * IMPORTANTE:
-   *
-   * No miramos ArrowUp.
-   * No miramos ArrowDown.
-   *
-   * Miramos el ESTADO REAL DEL VEHÍCULO.
-   *
-   * moving  → 0.05 €/s
-   * stopped → 0.02 €/s
-   */
   useEffect(() => {
     if (tripState !== "running") {
       return;
@@ -119,11 +91,6 @@ export default function Scene() {
             ? 0.05
             : 0.02;
 
-        /*
-         * El intervalo corre cada 100 ms,
-         * por eso cobramos 1/10 de la tarifa
-         * correspondiente a un segundo.
-         */
         return (
           currentAmount +
           pricePerSecond * 0.1
@@ -139,33 +106,23 @@ export default function Scene() {
   return (
     <>
       <Canvas
-        shadows
         camera={{
-          position: [0, 14, 68],
+          position: [0, 10, 50],
           fov: 65,
           near: 0.1,
-          far: 300,
+          far: 180,
         }}
       >
         <color
           attach="background"
-          args={["#87ceeb"]}
+          args={["#07111f"]}
         />
 
-        <ambientLight intensity={0.5} />
+        <ambientLight intensity={1.2} />
 
         <directionalLight
           position={[30, 40, 20]}
-          intensity={2.5}
-          castShadow
-          shadow-mapSize-width={2048}
-          shadow-mapSize-height={2048}
-          shadow-camera-near={1}
-          shadow-camera-far={150}
-          shadow-camera-left={-80}
-          shadow-camera-right={80}
-          shadow-camera-top={80}
-          shadow-camera-bottom={-80}
+          intensity={1.4}
         />
 
         <World />

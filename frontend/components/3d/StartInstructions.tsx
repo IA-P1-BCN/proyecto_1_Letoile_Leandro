@@ -161,8 +161,6 @@ function ActionLabel({
 }: ActionLabelProps) {
   return (
     <group position={position}>
-      {/* CAPAS POSTERIORES — PROFUNDIDAD 3D */}
-
       <Text
         position={[0, 0, -0.12]}
         fontSize={0.63}
@@ -219,7 +217,6 @@ function ActionLabel({
         {children}
       </Text>
 
-      {/* CARA FRONTAL */}
       <Text
         position={[0, 0, 0.05]}
         fontSize={0.63}
@@ -318,7 +315,10 @@ export default function StartInstructions({
   if (!visible) return null;
 
   return (
-    <group position={[0, 4.8, 39]}>
+    <group
+      position={[0, 4.8, 63]}
+      scale={1.5625}
+    >
       {/* PANEL PRINCIPAL */}
       <RoundedBox
         args={[17, 8.4, 0.3]}

@@ -14,8 +14,8 @@ export default function Building({
   width = 4,
   depth = 4,
   height = 8,
-  color = "#8a8f98",
-  windowColor = "#b9d7e8",
+  color = "#6f8494",
+  windowColor = "#b9e9ff",
 }: BuildingProps) {
   const windowRows = Math.max(
     2,
@@ -29,7 +29,11 @@ export default function Building({
 
   const windows = [];
 
-  for (let row = 0; row < windowRows; row++) {
+  for (
+    let row = 0;
+    row < windowRows;
+    row++
+  ) {
     for (
       let column = 0;
       column < windowColumns;
@@ -40,13 +44,19 @@ export default function Building({
         0.7 +
         column *
           ((width - 1.4) /
-            Math.max(windowColumns - 1, 1));
+            Math.max(
+              windowColumns - 1,
+              1
+            ));
 
       const y =
         1.3 +
         row *
           ((height - 2) /
-            Math.max(windowRows - 1, 1));
+            Math.max(
+              windowRows - 1,
+              1
+            ));
 
       windows.push(
         <mesh
@@ -57,11 +67,20 @@ export default function Building({
             depth / 2 + 0.02,
           ]}
         >
-          <boxGeometry args={[0.55, 0.75, 0.08]} />
+          <boxGeometry
+            args={[
+              0.55,
+              0.75,
+              0.08,
+            ]}
+          />
+
           <meshStandardMaterial
             color={windowColor}
-            roughness={0.35}
-            metalness={0.1}
+            roughness={0.2}
+            metalness={0.4}
+            emissive={windowColor}
+            emissiveIntensity={0.15}
           />
         </mesh>
       );
@@ -70,27 +89,33 @@ export default function Building({
 
   return (
     <group position={position}>
-      {/* Edificio */}
+      {/* Edificio futurista */}
       <mesh
-        castShadow
-        receiveShadow
-        position={[0, height / 2, 0]}
+        position={[
+          0,
+          height / 2,
+          0,
+        ]}
       >
         <boxGeometry
-          args={[width, height, depth]}
+          args={[
+            width,
+            height,
+            depth,
+          ]}
         />
 
         <meshStandardMaterial
           color={color}
-          roughness={0.8}
-          metalness={0}
+          roughness={0.3}
+          metalness={0.35}
+          transparent
+          opacity={0.78}
         />
       </mesh>
 
-      {/* Fachada superior */}
+      {/* Techo */}
       <mesh
-        castShadow
-        receiveShadow
         position={[
           0,
           height + 0.15,
@@ -106,8 +131,11 @@ export default function Building({
         />
 
         <meshStandardMaterial
-          color="#555b63"
-          roughness={0.75}
+          color="#384b5c"
+          roughness={0.25}
+          metalness={0.5}
+          transparent
+          opacity={0.85}
         />
       </mesh>
 
@@ -123,13 +151,19 @@ export default function Building({
         ]}
       >
         <boxGeometry
-          args={[0.9, 2, 0.08]}
+          args={[
+            0.9,
+            2,
+            0.08,
+          ]}
         />
 
         <meshStandardMaterial
-          color="#30343b"
-          roughness={0.5}
-          metalness={0.2}
+          color="#243746"
+          roughness={0.2}
+          metalness={0.6}
+          transparent
+          opacity={0.9}
         />
       </mesh>
     </group>

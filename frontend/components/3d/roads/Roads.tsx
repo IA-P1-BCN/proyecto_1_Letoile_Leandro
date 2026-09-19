@@ -4,41 +4,48 @@ import RoadSegment from "./RoadSegment";
 
 const ROAD_LENGTH = 4;
 
+const ROAD_POSITIONS = [-8, 8];
+
+const CITY_START = -60;
+const CITY_END = 60;
+
 type StreetProps = {
   axis: "x" | "z";
   position: number;
-  start: number;
-  end: number;
 };
 
 function Street({
   axis,
   position,
-  start,
-  end,
 }: StreetProps) {
   const segments = [];
 
   for (
-    let coordinate = start;
-    coordinate <= end;
+    let coordinate = CITY_START;
+    coordinate <= CITY_END;
     coordinate += ROAD_LENGTH
   ) {
     if (axis === "x") {
-      // Calle horizontal: el GLB necesita rotar 90°
       segments.push(
         <RoadSegment
           key={`${axis}-${position}-${coordinate}`}
-          position={[coordinate, 0, position]}
+          position={[
+            coordinate,
+            0,
+            position,
+          ]}
           rotation={[0, Math.PI / 2, 0]}
         />
       );
     } else {
-      // Calle vertical: orientación original del GLB
       segments.push(
         <RoadSegment
           key={`${axis}-${position}-${coordinate}`}
-          position={[position, 0, coordinate]}
+          position={[
+            position,
+            0,
+            coordinate,
+          ]}
           rotation={[0, 0, 0]}
         />
       );
@@ -51,69 +58,21 @@ function Street({
 export default function Roads() {
   return (
     <group>
-      {/* ========================= */}
-      {/* CALLES HORIZONTALES - X */}
-      {/* ========================= */}
+      {ROAD_POSITIONS.map((position) => (
+        <Street
+          key={`horizontal-${position}`}
+          axis="x"
+          position={position}
+        />
+      ))}
 
-      <Street
-        axis="x"
-        position={-24}
-        start={-28}
-        end={28}
-      />
-
-      <Street
-        axis="x"
-        position={-8}
-        start={-20}
-        end={20}
-      />
-
-      <Street
-        axis="x"
-        position={8}
-        start={-32}
-        end={32}
-      />
-
-      <Street
-        axis="x"
-        position={24}
-        start={-16}
-        end={28}
-      />
-
-      {/* ======================= */}
-      {/* CALLES VERTICALES - Z */}
-      {/* ======================= */}
-
-      <Street
-        axis="z"
-        position={-24}
-        start={-24}
-        end={24}
-      />
-
-      <Street
-        axis="z"
-        position={-8}
-        start={-32}
-        end={16}
-      />
-
-      <Street
-        axis="z"
-        position={8}
-        start={-16}
-        end={32}
-      />
-
-      <Street
-        axis="z"
-        position={24}
-        start={-28}
-        end={12}
-      />
+      {ROAD_POSITIONS.map((position) => (
+        <Street
+          key={`vertical-${position}`}
+          axis="z"
+          position={position}
+        />
+      ))}
     </group>
   );
 }
