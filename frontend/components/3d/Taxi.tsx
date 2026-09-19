@@ -5,22 +5,22 @@ import { forwardRef, useRef } from "react";
 import * as THREE from "three";
 import { useGLTF } from "@react-three/drei";
 
-import useTaxiControls from "./controls/TaxiControls";
+import type { TaxiControlsState } from "./controls/TaxiControls";
 
 type TaxiProps = {
+  controls: React.RefObject<TaxiControlsState | null>;
+  tripActive: boolean;
   onSpeedChange?: (speed: number) => void;
 };
 
 const Taxi = forwardRef<THREE.Group, TaxiProps>(
-  ({ onSpeedChange }, ref) => {
-    const controls = useTaxiControls();
-
+  ({ controls, tripActive, onSpeedChange }, ref) => {
     const speed = useRef(0);
     const lastReportedSpeed = useRef(0);
 
     const maxSpeed = 12;
     const acceleration = 8;
-    const braking = 12;
+    const braking = 18;
     const friction = 4;
     const rotationSpeed = 2;
 
@@ -34,35 +34,78 @@ const Taxi = forwardRef<THREE.Group, TaxiProps>(
 
       const input = controls.current;
 
-      if (input.forward) {
+      /*
+       * ==================================================
+       * VIAJE INACTIVO
+       * ==================================================
+       */
+
+      if (!tripActive) {
+        speed.current = 0;
+
+        if (lastReportedSpeed.current !== 0) {
+          lastReportedSpeed.current = 0;
+          onSpeedChange?.(0);
+        }
+
+        return;
+      }
+
+      /*
+       * ==================================================
+       * ACELERACIÓN
+       * ==================================================
+       */
+
+      if (input.forward && !input.brake) {
         speed.current += acceleration * delta;
       }
 
-      if (input.backward) {
-        speed.current -= braking * delta;
+      /*
+       * ==================================================
+       * FRENADO
+       * ==================================================
+       */
+
+      if (input.brake) {
+        speed.current = Math.max(
+          0,
+          speed.current - braking * delta
+        );
       }
 
-      if (!input.forward && !input.backward) {
-        if (speed.current > 0) {
-          speed.current = Math.max(
-            0,
-            speed.current - friction * delta
-          );
-        }
+      /*
+       * ==================================================
+       * FRICCIÓN
+       * ==================================================
+       */
 
-        if (speed.current < 0) {
-          speed.current = Math.min(
-            0,
-            speed.current + friction * delta
-          );
-        }
+      if (!input.forward && !input.brake) {
+        speed.current = Math.max(
+          0,
+          speed.current - friction * delta
+        );
       }
+
+      /*
+       * ==================================================
+       * LIMITAR VELOCIDAD
+       * ==================================================
+       *
+       * Nunca permitimos velocidad negativa.
+       */
 
       speed.current = THREE.MathUtils.clamp(
         speed.current,
-        -5,
+        0,
         maxSpeed
       );
+
+      /*
+       * ==================================================
+       * REPORTAR VELOCIDAD
+       * ==================================================
+       */
 
       if (
         Math.abs(
@@ -73,37 +116,53 @@ const Taxi = forwardRef<THREE.Group, TaxiProps>(
         onSpeedChange?.(speed.current);
       }
 
-      if (Math.abs(speed.current) > 0.1) {
-        const direction =
-          speed.current >= 0 ? 1 : -1;
+      /*
+       * ==================================================
+       * DIRECCIÓN
+       * ==================================================
+       */
 
+      if (speed.current > 0.1) {
         if (input.left) {
           taxi.rotation.y +=
-            rotationSpeed * delta * direction;
+            rotationSpeed * delta;
         }
 
         if (input.right) {
           taxi.rotation.y -=
-            rotationSpeed * delta * direction;
+            rotationSpeed * delta;
         }
       }
 
-      const forward = new THREE.Vector3(
-        0,
-        0,
-        -1
-      );
+      /*
+       * ==================================================
+       * MOVIMIENTO
+       * ==================================================
+       */
 
-      forward.applyQuaternion(taxi.quaternion);
+      if (speed.current > 0) {
+        const forward = new THREE.Vector3(
+          0,
+          0,
+          -1
+        );
 
-      taxi.position.addScaledVector(
-        forward,
-        speed.current * delta
-      );
+        forward.applyQuaternion(
+          taxi.quaternion
+        );
+
+        taxi.position.addScaledVector(
+          forward,
+          speed.current * delta
+        );
+      }
     });
 
     return (
-      <group ref={ref}>
+      <group
+        ref={ref}
+        position={[0, 0, 48]}
+      >
         <primitive
           object={scene}
           scale={1.5}

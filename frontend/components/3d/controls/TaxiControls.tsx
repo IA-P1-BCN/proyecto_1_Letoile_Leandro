@@ -4,18 +4,31 @@ import { useEffect, useRef } from "react";
 
 export type TaxiControlsState = {
   forward: boolean;
-  backward: boolean;
+  brake: boolean;
   left: boolean;
   right: boolean;
 };
 
-export default function useTaxiControls(): React.RefObject<TaxiControlsState> {
+type TaxiControlsCallbacks = {
+  onStart?: () => void;
+  onFinish?: () => void;
+};
+
+export default function useTaxiControls(
+  callbacks: TaxiControlsCallbacks = {}
+): React.RefObject<TaxiControlsState> {
   const controls = useRef<TaxiControlsState>({
     forward: false,
-    backward: false,
+    brake: false,
     left: false,
     right: false,
   });
+
+  const callbacksRef = useRef(callbacks);
+
+  useEffect(() => {
+    callbacksRef.current = callbacks;
+  }, [callbacks]);
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -25,7 +38,7 @@ export default function useTaxiControls(): React.RefObject<TaxiControlsState> {
           break;
 
         case "ArrowDown":
-          controls.current.backward = true;
+          controls.current.brake = true;
           break;
 
         case "ArrowLeft":
@@ -34,6 +47,16 @@ export default function useTaxiControls(): React.RefObject<TaxiControlsState> {
 
         case "ArrowRight":
           controls.current.right = true;
+          break;
+
+        case "Enter":
+          event.preventDefault();
+          callbacksRef.current.onStart?.();
+          break;
+
+        case " ":
+          event.preventDefault();
+          callbacksRef.current.onFinish?.();
           break;
       }
     };
@@ -45,7 +68,7 @@ export default function useTaxiControls(): React.RefObject<TaxiControlsState> {
           break;
 
         case "ArrowDown":
-          controls.current.backward = false;
+          controls.current.brake = false;
           break;
 
         case "ArrowLeft":

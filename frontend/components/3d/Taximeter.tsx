@@ -2,7 +2,11 @@
 
 type TaximeterProps = {
   amount: number;
-  status: "idle" | "moving" | "stopped";
+  status:
+    | "idle"
+    | "moving"
+    | "stopped"
+    | "finished";
 };
 
 const statusConfig = {
@@ -11,15 +15,23 @@ const statusConfig = {
     color: "#facc15",
     rate: "0,02 €/s",
   },
+
   moving: {
     label: "EN MARCHA",
     color: "#22c55e",
     rate: "0,05 €/s",
   },
+
   stopped: {
     label: "DETENIDO",
     color: "#f97316",
     rate: "0,02 €/s",
+  },
+
+  finished: {
+    label: "FINALIZADO",
+    color: "#ef4444",
+    rate: "VIAJE CERRADO",
   },
 };
 
@@ -32,14 +44,18 @@ export default function Taximeter({
       ? statusConfig.moving
       : status === "stopped"
         ? statusConfig.stopped
-        : statusConfig.idle;
+        : status === "finished"
+          ? statusConfig.finished
+          : statusConfig.idle;
 
   const progressWidth =
     status === "moving"
       ? "72%"
       : status === "stopped"
         ? "38%"
-        : "12%";
+        : status === "finished"
+          ? "100%"
+          : "12%";
 
   return (
     <div
@@ -64,7 +80,7 @@ export default function Taximeter({
         overflow: "hidden",
       }}
     >
-      {/* Barra superior de estado */}
+      {/* Línea superior de estado */}
       <div
         style={{
           position: "absolute",
@@ -112,7 +128,6 @@ export default function Taximeter({
           </div>
         </div>
 
-        {/* Indicador online */}
         <div
           style={{
             display: "flex",
@@ -138,7 +153,7 @@ export default function Taximeter({
         </div>
       </div>
 
-      {/* Importe actual */}
+      {/* Importe */}
       <div
         style={{
           padding: "16px",
@@ -193,7 +208,7 @@ export default function Taximeter({
         </div>
       </div>
 
-      {/* Estado y tarifa */}
+      {/* Estado */}
       <div
         style={{
           display: "flex",
