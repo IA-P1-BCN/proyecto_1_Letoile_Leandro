@@ -1,7 +1,13 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { useEffect, useRef, useState } from "react";
+
+import {
+  useEffect,
+  useRef,
+  useState,
+} from "react";
+
 import * as THREE from "three";
 
 import Taxi, {
@@ -9,14 +15,21 @@ import Taxi, {
 } from "./Taxi";
 
 import World from "./World";
+
 import CameraFollow from "./CameraFollow";
+
 import Taximeter from "./Taximeter";
+
 import StartInstructions from "./StartInstructions";
+
 import useTaxiControls from "./controls/TaxiControls";
+
+import FinishSequence from "./finish/FinishSequence";
 
 type TripState =
   | "idle"
   | "running"
+  | "finishing"
   | "finished";
 
 type TaxiStatus =
@@ -41,11 +54,9 @@ export default function Scene() {
   const [tripState, setTripState] =
     useState<TripState>("idle");
 
-  /*
-   * =====================================
-   * INICIAR VIAJE
-   * =====================================
-   */
+  // =====================================================
+  // INICIAR VIAJE
+  // =====================================================
 
   const handleStart = () => {
     if (
@@ -56,17 +67,17 @@ export default function Scene() {
     }
 
     setAmount(0);
+
     setSpeed(0);
+
     setVehicleStatus("stopped");
 
     setTripState("running");
   };
 
-  /*
-   * =====================================
-   * FINALIZAR VIAJE
-   * =====================================
-   */
+  // =====================================================
+  // FINALIZAR VIAJE
+  // =====================================================
 
   const handleFinish = () => {
     if (tripState !== "running") {
@@ -74,42 +85,39 @@ export default function Scene() {
     }
 
     setSpeed(0);
+
     setVehicleStatus("stopped");
 
-    setTripState("finished");
+    setTripState("finishing");
   };
 
-  /*
-   * =====================================
-   * CONTROLES
-   * =====================================
-   */
+  // =====================================================
+  // CONTROLES
+  // =====================================================
 
   const controls = useTaxiControls({
     onStart: handleStart,
     onFinish: handleFinish,
   });
 
-  /*
-   * =====================================
-   * ESTADO DEL TAXÍMETRO
-   * =====================================
-   */
+  // =====================================================
+  // ESTADO DEL TAXÍMETRO
+  // =====================================================
 
   const status: TaxiStatus =
     tripState === "finished"
       ? "finished"
       : tripState === "idle"
         ? "idle"
-        : vehicleStatus === "moving"
-          ? "moving"
-          : "stopped";
+        : tripState === "finishing"
+          ? "stopped"
+          : vehicleStatus === "moving"
+            ? "moving"
+            : "stopped";
 
-  /*
-   * =====================================
-   * CÁLCULO DEL IMPORTE
-   * =====================================
-   */
+  // =====================================================
+  // CÁLCULO DEL IMPORTE
+  // =====================================================
 
   useEffect(() => {
     if (tripState !== "running") {
@@ -138,16 +146,26 @@ export default function Scene() {
     vehicleStatus,
   ]);
 
+  // =====================================================
+  // FINAL DE LA SECUENCIA
+  // =====================================================
+
+  const handleFinishSequence = () => {
+    setSpeed(0);
+
+    setVehicleStatus("stopped");
+
+    setTripState("finished");
+  };
+
   return (
     <>
       <Canvas
         camera={{
-          /*
-           * CÁMARA INICIAL
-           *
-           * Se coloca detrás de donde
-           * estará el taxi.
-           */
+          // =================================================
+          // CÁMARA INICIAL
+          // =================================================
+
           position: [
             -1,
             4.5,
@@ -161,18 +179,18 @@ export default function Scene() {
           far: 180,
         }}
       >
-        {/* ================================= */}
-        {/* FONDO */}
-        {/* ================================= */}
+        {/* ================================================
+            FONDO
+        ================================================= */}
 
         <color
           attach="background"
           args={["#07111f"]}
         />
 
-        {/* ================================= */}
-        {/* ILUMINACIÓN */}
-        {/* ================================= */}
+        {/* ================================================
+            ILUMINACIÓN
+        ================================================= */}
 
         <ambientLight
           intensity={1.2}
@@ -187,59 +205,89 @@ export default function Scene() {
           intensity={1.4}
         />
 
-        {/* ================================= */}
-        {/* MUNDO */}
-        {/* ================================= */}
+        {/* ================================================
+            MUNDO
+        ================================================= */}
 
         <World />
 
-        {/* ================================= */}
-        {/* CARTEL DE INICIO */}
-        {/* ================================= */}
+        {/* ================================================
+            CARTEL DE INICIO
+        ================================================= */}
 
         <StartInstructions
           visible={true}
         />
 
-        {/* ================================= */}
-        {/* TAXI */}
-        {/* ================================= */}
+        {/* ================================================
+            TAXI
+        ================================================= */}
 
         <Taxi
           ref={taxiRef}
           controls={controls}
+
           tripActive={
             tripState === "running"
           }
+
           visible={
             tripState !== "idle"
           }
+
           onSpeedChange={
             setSpeed
           }
+
           onVehicleStatusChange={
             setVehicleStatus
           }
         />
 
-        {/* ================================= */}
-        {/* CÁMARA */}
-        {/* ================================= */}
+        {/* ================================================
+            SECUENCIA DE FINALIZACIÓN
+        ================================================= */}
+
+        <FinishSequence
+          taxiRef={taxiRef}
+
+          active={
+            tripState === "finishing"
+          }
+
+          onFinished={
+            handleFinishSequence
+          }
+        />
+
+        {/* ================================================
+            CÁMARA
+        ================================================= */}
 
         <CameraFollow
           target={taxiRef}
+
           started={
             tripState === "running"
           }
+
           intro={
             tripState === "idle"
+          }
+
+          finishing={
+            tripState === "finishing"
+          }
+
+          finished={
+            tripState === "finished"
           }
         />
       </Canvas>
 
-      {/* ================================= */}
-      {/* TAXÍMETRO */}
-      {/* ================================= */}
+      {/* ================================================
+          TAXÍMETRO
+      ================================================= */}
 
       <Taximeter
         amount={amount}

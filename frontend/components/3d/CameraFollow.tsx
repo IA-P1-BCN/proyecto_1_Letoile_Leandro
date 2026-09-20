@@ -17,12 +17,18 @@ type CameraFollowProps = {
   started: boolean;
 
   intro: boolean;
+
+  finishing?: boolean;
+
+  finished?: boolean;
 };
 
 export default function CameraFollow({
   target,
   started,
   intro,
+  finishing = false,
+  finished = false,
 }: CameraFollowProps) {
   const { camera } = useThree();
 
@@ -47,14 +53,10 @@ export default function CameraFollow({
   );
 
   useFrame((_, delta) => {
-    /*
-     * ESTADO INICIAL
-     *
-     * La cámara permanece detrás de la posición
-     * original del taxi y mira hacia el cartel.
-     *
-     * Se acerca un poco respecto a la versión anterior.
-     */
+    // =====================================================
+    // CÁMARA DE INTRO
+    // =====================================================
+
     if (intro) {
       targetPosition.current.set(
         -1,
@@ -63,9 +65,7 @@ export default function CameraFollow({
       );
 
       const smoothFactor =
-        1 - Math.exp(
-          -8 * delta
-        );
+        1 - Math.exp(-8 * delta);
 
       currentPosition.current.lerp(
         targetPosition.current,
@@ -85,15 +85,57 @@ export default function CameraFollow({
       return;
     }
 
-    const taxi = target.current;
+    // =====================================================
+    // PLANO FINAL PANORÁMICO
+    // =====================================================
+
+    if (
+      finishing ||
+      finished
+    ) {
+      targetPosition.current.set(
+        -11,
+        8,
+        23
+      );
+
+      const finishTarget =
+        new THREE.Vector3(
+          0,
+          1.3,
+          5
+        );
+
+      const smoothFactor =
+        1 - Math.exp(-2.2 * delta);
+
+      currentPosition.current.lerp(
+        targetPosition.current,
+        smoothFactor
+      );
+
+      camera.position.copy(
+        currentPosition.current
+      );
+
+      camera.lookAt(
+        finishTarget
+      );
+
+      return;
+    }
+
+    // =====================================================
+    // CÁMARA NORMAL SIGUIENDO EL TAXI
+    // =====================================================
+
+    const taxi =
+      target.current;
 
     if (!taxi) {
       return;
     }
 
-    /*
-     * DIRECCIÓN DEL TAXI
-     */
     forward.current.set(
       0,
       0,
@@ -104,9 +146,6 @@ export default function CameraFollow({
       taxi.quaternion
     );
 
-    /*
-     * LATERAL DEL TAXI
-     */
     right.current.set(
       1,
       0,
@@ -117,27 +156,19 @@ export default function CameraFollow({
       taxi.quaternion
     );
 
-    /*
-     * DISTANCIA DE LA CÁMARA
-     */
     const distance = 10;
+
     const height = 4;
 
     targetPosition.current.copy(
       taxi.position
     );
 
-    /*
-     * Nos colocamos detrás del taxi.
-     */
     targetPosition.current.addScaledVector(
       forward.current,
       -distance
     );
 
-    /*
-     * Pequeño desplazamiento lateral.
-     */
     targetPosition.current.addScaledVector(
       right.current,
       1
@@ -146,13 +177,8 @@ export default function CameraFollow({
     targetPosition.current.y +=
       height;
 
-    /*
-     * Suavizado del seguimiento.
-     */
     const smoothFactor =
-      1 - Math.exp(
-        -6 * delta
-      );
+      1 - Math.exp(-6 * delta);
 
     currentPosition.current.lerp(
       targetPosition.current,
@@ -163,14 +189,12 @@ export default function CameraFollow({
       currentPosition.current
     );
 
-    /*
-     * La cámara mira ligeramente por encima
-     * del centro del taxi.
-     */
     camera.lookAt(
       taxi.position.x,
       taxi.position.y + 1,
       taxi.position.z
     );
   });
+
+  return null;
 }
