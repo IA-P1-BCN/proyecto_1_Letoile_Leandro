@@ -1,4 +1,5 @@
 import time
+from datetime import datetime
 
 from backend.domain.state import TaxiState
 from backend.domain.taxi import Taxi
@@ -7,8 +8,10 @@ from backend.domain.taxi import Taxi
 class Ride:
     def __init__(self):
         self.taxi = Taxi()
-
         self.started = False
+
+        self.started_at = None
+        self.finished_at = None
 
         self.state_start_time = None
 
@@ -22,6 +25,9 @@ class Ride:
         self.taxi.start()
 
         self.started = True
+        self.started_at = datetime.now().isoformat()
+        self.finished_at = None
+
         self.state_start_time = time.time()
 
         return True
@@ -40,7 +46,6 @@ class Ride:
         )
 
         self.taxi.move()
-
         self.state_start_time = current_time
 
         return True
@@ -59,7 +64,6 @@ class Ride:
         )
 
         self.taxi.stop()
-
         self.state_start_time = current_time
 
         return True
@@ -70,9 +74,7 @@ class Ride:
 
         current_time = time.time()
 
-        elapsed = (
-            current_time - self.state_start_time
-        )
+        elapsed = current_time - self.state_start_time
 
         if self.taxi.state == TaxiState.MOVING:
             self.moving_time += elapsed
@@ -80,12 +82,16 @@ class Ride:
         elif self.taxi.state == TaxiState.STOPPED:
             self.stopped_time += elapsed
 
+        self.finished_at = datetime.now().isoformat()
+
         self.taxi.finish()
 
         self.started = False
         self.state_start_time = None
 
         return {
+            "started_at": self.started_at,
+            "finished_at": self.finished_at,
             "stopped_time": self.stopped_time,
             "moving_time": self.moving_time,
         }
