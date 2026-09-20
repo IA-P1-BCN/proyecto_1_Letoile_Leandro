@@ -7,49 +7,54 @@ RATE_MOVING = 0.05
 
 
 class Taximeter:
-
     def __init__(self):
         self.ride = None
 
     def start(self):
         if self.ride is not None:
-            return False, "⚠️ Ya hay una carrera en curso"
+            return False, "Ya hay una carrera en curso"
 
         self.ride = Ride()
         self.ride.start()
 
-        return True, "🚕 Carrera iniciada"
+        return True, "Carrera iniciada"
 
     def move(self):
         if self.ride is None:
-            return False, "⚠️ No hay ninguna carrera en curso"
+            return False, "No hay ninguna carrera en curso"
 
         if self.ride.taxi.state == TaxiState.MOVING:
-            return False, "⚠️ El taxi ya está en movimiento"
+            return False, "El taxi ya está en movimiento"
 
         self.ride.move()
 
-        return True, "🚗 Estado: en movimiento"
+        return True, "Estado: en movimiento"
 
     def stop(self):
         if self.ride is None:
-            return False, "⚠️ No hay ninguna carrera en curso"
+            return False, "No hay ninguna carrera en curso"
 
         if self.ride.taxi.state == TaxiState.STOPPED:
-            return False, "⚠️ El taxi ya está detenido"
+            return False, "El taxi ya está detenido"
 
         self.ride.stop()
 
-        return True, "🛑 Estado: detenido"
+        return True, "Estado: detenido"
 
     def finish(self):
         if self.ride is None:
-            return False, "⚠️ No hay ninguna carrera en curso"
+            return False, "No hay ninguna carrera en curso"
 
         times = self.ride.finish()
 
-        stopped_cost = times["stopped_time"] * RATE_STOPPED
-        moving_cost = times["moving_time"] * RATE_MOVING
+        stopped_cost = (
+            times["stopped_time"] * RATE_STOPPED
+        )
+
+        moving_cost = (
+            times["moving_time"] * RATE_MOVING
+        )
+
         total = stopped_cost + moving_cost
 
         result = {
