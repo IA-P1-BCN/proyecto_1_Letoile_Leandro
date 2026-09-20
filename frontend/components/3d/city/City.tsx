@@ -3,11 +3,11 @@
 import CityBlock from "./CityBlock";
 
 const CITY_BLOCKS: [number, number, number][] = [
-  [0, 0, 0],       // Centro
-  [0, 0, -32],     // Arriba
-  [0, 0, 32],      // Abajo
-  [-32, 0, 0],     // Izquierda
-  [32, 0, 0],      // Derecha
+  [0, 0, 0], // Centro
+  [0, 0, -32], // Arriba
+  [0, 0, 32], // Abajo
+  [-32, 0, 0], // Izquierda
+  [32, 0, 0], // Derecha
 ];
 
 export default function City() {
@@ -17,6 +17,7 @@ export default function City() {
         <CityBlock
           key={index}
           position={position}
+          isCentral={index === 0}
         />
       ))}
     </group>
