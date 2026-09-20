@@ -25,7 +25,6 @@ type CameraFollowProps = {
 
 export default function CameraFollow({
   target,
-  started,
   intro,
   finishing = false,
   finished = false,
@@ -54,7 +53,7 @@ export default function CameraFollow({
 
   useFrame((_, delta) => {
     // =====================================================
-    // CÁMARA DE INTRO
+    // INTRO
     // =====================================================
 
     if (intro) {
@@ -65,7 +64,8 @@ export default function CameraFollow({
       );
 
       const smoothFactor =
-        1 - Math.exp(-8 * delta);
+        1 -
+        Math.exp(-8 * delta);
 
       currentPosition.current.lerp(
         targetPosition.current,
@@ -86,7 +86,7 @@ export default function CameraFollow({
     }
 
     // =====================================================
-    // PLANO FINAL PANORÁMICO
+    // FINISH
     // =====================================================
 
     if (
@@ -107,7 +107,8 @@ export default function CameraFollow({
         );
 
       const smoothFactor =
-        1 - Math.exp(-2.2 * delta);
+        1 -
+        Math.exp(-2.2 * delta);
 
       currentPosition.current.lerp(
         targetPosition.current,
@@ -126,15 +127,16 @@ export default function CameraFollow({
     }
 
     // =====================================================
-    // CÁMARA NORMAL SIGUIENDO EL TAXI
+    // FOLLOW TAXI
     // =====================================================
 
-    const taxi =
-      target.current;
+    const taxi = target.current;
 
     if (!taxi) {
       return;
     }
+
+    // Dirección hacia delante del taxi
 
     forward.current.set(
       0,
@@ -145,6 +147,8 @@ export default function CameraFollow({
     forward.current.applyQuaternion(
       taxi.quaternion
     );
+
+    // Dirección lateral
 
     right.current.set(
       1,
@@ -174,11 +178,11 @@ export default function CameraFollow({
       1
     );
 
-    targetPosition.current.y +=
-      height;
+    targetPosition.current.y += height;
 
     const smoothFactor =
-      1 - Math.exp(-6 * delta);
+      1 -
+      Math.exp(-6 * delta);
 
     currentPosition.current.lerp(
       targetPosition.current,

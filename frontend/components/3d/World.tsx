@@ -8,7 +8,9 @@ export default function World() {
   return (
     <group>
       <Ground />
+
       <Roads />
+
       <City />
     </group>
   );
