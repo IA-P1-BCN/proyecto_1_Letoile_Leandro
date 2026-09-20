@@ -1,8 +1,12 @@
+import json
+import os
+import tempfile
 import unittest
 from unittest.mock import patch
 
 from backend.domain.taximeter import Taximeter
 from backend.domain.state import TaxiState
+from backend.infrastructure.config.tariff_config import TariffConfig
 
 
 class TestTaximeter(unittest.TestCase):
@@ -346,6 +350,115 @@ class TestTaximeter(unittest.TestCase):
             1.30,
             places=2
         )
+
+    # =====================================================
+    # CONFIGURACION DE TARIFAS
+    # =====================================================
+
+    def test_loads_tariffs_from_configuration(self):
+        """
+        Comprueba que TariffConfig lee correctamente
+        las tarifas desde un archivo JSON.
+        """
+
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".json",
+            encoding="utf-8",
+            delete=False
+        ) as file:
+
+            json.dump(
+                {
+                    "stopped": 0.10,
+                    "moving": 0.20
+                },
+                file
+            )
+
+            config_path = file.name
+
+        try:
+            config = TariffConfig(config_path)
+
+            self.assertEqual(
+                config.stopped_rate,
+                0.10
+            )
+
+            self.assertEqual(
+                config.moving_rate,
+                0.20
+            )
+
+        finally:
+            os.remove(config_path)
+
+    @patch("backend.domain.ride.time.time")
+    def test_uses_custom_tariff_configuration(self, mock_time):
+        """
+        Comprueba que Taximeter utiliza las tarifas
+        proporcionadas mediante TariffConfig.
+
+        Configuración:
+
+        detenido = 0.10 €/segundo
+        movimiento = 0.20 €/segundo
+
+        Carrera:
+
+        10 segundos detenido
+
+        Resultado:
+
+        10 × 0.10 = 1.00 €
+        """
+
+        with tempfile.NamedTemporaryFile(
+            mode="w",
+            suffix=".json",
+            encoding="utf-8",
+            delete=False
+        ) as file:
+
+            json.dump(
+                {
+                    "stopped": 0.10,
+                    "moving": 0.20
+                },
+                file
+            )
+
+            config_path = file.name
+
+        try:
+            tariff_config = TariffConfig(config_path)
+
+            taximeter = Taximeter(tariff_config)
+
+            mock_time.return_value = 100
+            taximeter.start()
+
+            mock_time.return_value = 110
+
+            success, result = taximeter.finish()
+
+            self.assertTrue(success)
+
+            self.assertAlmostEqual(
+                result["stopped_cost"],
+                1.00,
+                places=2
+            )
+
+            self.assertAlmostEqual(
+                result["total"],
+                1.00,
+                places=2
+            )
+
+        finally:
+            os.remove(config_path)
 
 
 if __name__ == "__main__":

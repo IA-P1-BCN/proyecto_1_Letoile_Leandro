@@ -1,14 +1,13 @@
 from backend.domain.ride import Ride
 from backend.domain.state import TaxiState
-
-
-RATE_STOPPED = 0.02
-RATE_MOVING = 0.05
+from backend.infrastructure.config.tariff_config import TariffConfig
 
 
 class Taximeter:
-    def __init__(self):
+
+    def __init__(self, tariff_config=None):
         self.ride = None
+        self.tariff_config = tariff_config or TariffConfig()
 
     def start(self):
         if self.ride is not None:
@@ -48,11 +47,13 @@ class Taximeter:
         times = self.ride.finish()
 
         stopped_cost = (
-            times["stopped_time"] * RATE_STOPPED
+            times["stopped_time"]
+            * self.tariff_config.stopped_rate
         )
 
         moving_cost = (
-            times["moving_time"] * RATE_MOVING
+            times["moving_time"]
+            * self.tariff_config.moving_rate
         )
 
         total = stopped_cost + moving_cost
