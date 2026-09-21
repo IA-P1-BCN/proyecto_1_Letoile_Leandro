@@ -2,6 +2,7 @@ from backend.domain.ride import Ride
 from backend.domain.ride_record import RideRecord
 from backend.domain.state import TaxiState
 from backend.infrastructure.config.tariff_config import TariffConfig
+from backend.infrastructure.logging.logger import TaximeterLogger
 from backend.infrastructure.persistence.ride_repository import RideRepository
 
 
@@ -10,7 +11,8 @@ class Taximeter:
     def __init__(
         self,
         tariff_config=None,
-        ride_repository=None
+        ride_repository=None,
+        logger=None
     ):
         self.ride = None
 
@@ -22,39 +24,79 @@ class Taximeter:
             ride_repository or RideRepository()
         )
 
+        self.logger = (
+            logger or TaximeterLogger()
+        )
+
     def start(self):
         if self.ride is not None:
+            self.logger.warning(
+                "Intento de iniciar una carrera mientras otra está en curso"
+            )
+
             return False, "Ya hay una carrera en curso"
 
         self.ride = Ride()
         self.ride.start()
 
+        self.logger.info(
+            "Carrera iniciada"
+        )
+
         return True, "Carrera iniciada"
 
     def move(self):
         if self.ride is None:
+            self.logger.error(
+                "Intento de mover el taxi sin una carrera en curso"
+            )
+
             return False, "No hay ninguna carrera en curso"
 
         if self.ride.taxi.state == TaxiState.MOVING:
+            self.logger.warning(
+                "Intento de mover el taxi cuando ya está en movimiento"
+            )
+
             return False, "El taxi ya está en movimiento"
 
         self.ride.move()
+
+        self.logger.info(
+            "Taxi en movimiento"
+        )
 
         return True, "Estado: en movimiento"
 
     def stop(self):
         if self.ride is None:
+            self.logger.error(
+                "Intento de detener el taxi sin una carrera en curso"
+            )
+
             return False, "No hay ninguna carrera en curso"
 
         if self.ride.taxi.state == TaxiState.STOPPED:
+            self.logger.warning(
+                "Intento de detener el taxi cuando ya está detenido"
+            )
+
             return False, "El taxi ya está detenido"
 
         self.ride.stop()
+
+        self.logger.info(
+            "Taxi detenido"
+        )
 
         return True, "Estado: detenido"
 
     def finish(self):
         if self.ride is None:
+            self.logger.error(
+                "Intento de finalizar una carrera inexistente"
+            )
+
             return False, "No hay ninguna carrera en curso"
 
         times = self.ride.finish()
@@ -82,7 +124,9 @@ class Taximeter:
             total=total,
         )
 
-        self.ride_repository.save(ride_record)
+        self.ride_repository.save(
+            ride_record
+        )
 
         result = {
             "ride_id": ride_record.ride_id,
@@ -94,6 +138,12 @@ class Taximeter:
             "moving_cost": ride_record.moving_cost,
             "total": ride_record.total,
         }
+
+        self.logger.info(
+            f"Carrera finalizada - "
+            f"ride_id={ride_record.ride_id} - "
+            f"total={ride_record.total:.2f} EUR"
+        )
 
         self.ride = None
 

@@ -8,6 +8,7 @@ from unittest.mock import patch
 from backend.domain.taximeter import Taximeter
 from backend.domain.state import TaxiState
 from backend.infrastructure.config.tariff_config import TariffConfig
+from backend.infrastructure.logging.logger import TaximeterLogger
 from backend.infrastructure.persistence.ride_repository import RideRepository
 
 
@@ -20,15 +21,29 @@ class TestTaximeter(unittest.TestCase):
             Path(self.temp_dir.name) / "rides.json"
         )
 
+        self.log_path = (
+            Path(self.temp_dir.name) / "taximeter.log"
+        )
+
         self.repository = RideRepository(
             self.repository_path
         )
 
+        self.logger = TaximeterLogger(
+            self.log_path
+        )
+
         self.taximeter = Taximeter(
-            ride_repository=self.repository
+            ride_repository=self.repository,
+            logger=self.logger
         )
 
     def tearDown(self):
+        for handler in self.logger.logger.handlers:
+            handler.close()
+
+        self.logger.logger.handlers.clear()
+
         self.temp_dir.cleanup()
 
     def test_initial_state_is_idle(self):
@@ -224,8 +239,8 @@ class TestTaximeter(unittest.TestCase):
     @patch("backend.domain.ride.time.time")
     def test_calculates_stopped_cost(self, mock_time):
         """
-        10 segundos detenido × 0.02 €/segundo
-        = 0.20 €
+        10 segundos detenido × 0.02 EUR/segundo
+        = 0.20 EUR
         """
 
         mock_time.side_effect = [
@@ -247,8 +262,8 @@ class TestTaximeter(unittest.TestCase):
     @patch("backend.domain.ride.time.time")
     def test_calculates_moving_cost(self, mock_time):
         """
-        20 segundos en movimiento × 0.05 €/segundo
-        = 1.00 €
+        20 segundos en movimiento × 0.05 EUR/segundo
+        = 1.00 EUR
         """
 
         mock_time.side_effect = [
@@ -278,13 +293,13 @@ class TestTaximeter(unittest.TestCase):
         20 segundos en movimiento
 
         Detenido:
-        10 × 0.02 = 0.20 €
+        10 × 0.02 = 0.20 EUR
 
         Movimiento:
-        20 × 0.05 = 1.00 €
+        20 × 0.05 = 1.00 EUR
 
         Total:
-        1.20 €
+        1.20 EUR
         """
 
         mock_time.side_effect = [
@@ -373,7 +388,8 @@ class TestTaximeter(unittest.TestCase):
 
             taximeter = Taximeter(
                 tariff_config=config,
-                ride_repository=self.repository
+                ride_repository=self.repository,
+                logger=self.logger
             )
 
             with patch(
@@ -400,7 +416,7 @@ class TestTaximeter(unittest.TestCase):
             os.remove(config_path)
 
     # =========================================================
-    # US-05 — HISTORIAL DE CARRERAS
+    # US-05 - HISTORIAL DE CARRERAS
     # =========================================================
 
     def test_finish_saves_ride_to_history(self):
