@@ -19,11 +19,15 @@ type TaxiProps = {
   controls: React.RefObject<
     TaxiControlsState | null
   >;
+
   tripActive: boolean;
+
   visible?: boolean;
+
   onSpeedChange?: (
     speed: number
   ) => void;
+
   onVehicleStatusChange?: (
     status: VehicleStatus
   ) => void;
@@ -43,6 +47,10 @@ const Taxi = forwardRef<
     },
     ref
   ) => {
+    // =====================================================
+    // VELOCIDAD
+    // =====================================================
+
     const speed = useRef(0);
 
     const lastReportedSpeed =
@@ -55,12 +63,19 @@ const Taxi = forwardRef<
     // ANIMACIÓN DE ENTRADA
     // =====================================================
 
-    const introProgress = useRef(0);
-    const introStarted = useRef(false);
-    const introFinished = useRef(false);
+    const introProgress =
+      useRef(0);
+
+    const introStarted =
+      useRef(false);
+
+    const introFinished =
+      useRef(false);
 
     const baseY = 0.25;
+
     const introStartHeight = 10;
+
     const introDuration = 0.95;
 
     // =====================================================
@@ -68,10 +83,18 @@ const Taxi = forwardRef<
     // =====================================================
 
     const maxSpeed = 12;
+
     const acceleration = 8;
+
     const braking = 18;
+
     const friction = 4;
+
     const rotationSpeed = 2;
+
+    // =====================================================
+    // MODELO
+    // =====================================================
 
     const { scene } = useGLTF(
       "/models/taxi/taxi.glb"
@@ -114,7 +137,9 @@ const Taxi = forwardRef<
     // =====================================================
 
     const glowY = -0.30;
+
     const frontOffset = -1.5;
+
     const rearOffset = 1.5;
 
     // =====================================================
@@ -152,16 +177,21 @@ const Taxi = forwardRef<
         speed.current = 0;
 
         introStarted.current = false;
+
         introFinished.current = false;
+
         introProgress.current = 0;
 
         taxi.position.y = baseY;
+
         taxi.scale.set(1, 1, 1);
 
         if (
-          lastReportedSpeed.current !== 0
+          lastReportedSpeed.current !==
+          0
         ) {
           lastReportedSpeed.current = 0;
+
           onSpeedChange?.(0);
         }
 
@@ -171,10 +201,6 @@ const Taxi = forwardRef<
         ) {
           lastVehicleStatus.current =
             "stopped";
-
-          console.log(
-            "TAXI → SCENE STATUS: stopped"
-          );
 
           onVehicleStatusChange?.(
             "stopped"
@@ -193,7 +219,9 @@ const Taxi = forwardRef<
         !introStarted.current
       ) {
         introStarted.current = true;
+
         introFinished.current = false;
+
         introProgress.current = 0;
 
         taxi.position.y =
@@ -223,10 +251,16 @@ const Taxi = forwardRef<
             1
           );
 
-        // Ease In Out Cubic
+        // =================================================
+        // EASE IN OUT CUBIC
+        // =================================================
+
         const eased =
           t < 0.5
-            ? 4 * t * t * t
+            ? 4 *
+              t *
+              t *
+              t
             : 1 -
               Math.pow(
                 -2 * t + 2,
@@ -244,7 +278,9 @@ const Taxi = forwardRef<
         // =================================================
 
         let scaleX = 1;
+
         let scaleY = 1;
+
         let scaleZ = 1;
 
         if (t < 0.82) {
@@ -343,10 +379,6 @@ const Taxi = forwardRef<
         ) {
           lastVehicleStatus.current =
             "stopped";
-
-          console.log(
-            "TAXI → SCENE STATUS: stopped"
-          );
 
           onVehicleStatusChange?.(
             "stopped"
@@ -447,19 +479,6 @@ const Taxi = forwardRef<
         currentVehicleStatus !==
         lastVehicleStatus.current
       ) {
-        console.log(
-          "TAXI → SCENE STATUS:",
-          currentVehicleStatus,
-          {
-            speed:
-              speed.current,
-            forward:
-              input.forward,
-            brake:
-              input.brake,
-          }
-        );
-
         lastVehicleStatus.current =
           currentVehicleStatus;
 
@@ -478,13 +497,13 @@ const Taxi = forwardRef<
         if (input.left) {
           taxi.rotation.y +=
             rotationSpeed *
-            delta;
+              delta;
         }
 
         if (input.right) {
           taxi.rotation.y -=
             rotationSpeed *
-            delta;
+              delta;
         }
       }
 
@@ -513,6 +532,10 @@ const Taxi = forwardRef<
         );
       }
     });
+
+    // =====================================================
+    // RENDER
+    // =====================================================
 
     return (
       <group
@@ -575,6 +598,7 @@ const Taxi = forwardRef<
             `}
             fragmentShader={`
               uniform vec3 color;
+
               varying vec2 vUv;
 
               void main() {
@@ -690,6 +714,7 @@ const Taxi = forwardRef<
             `}
             fragmentShader={`
               uniform vec3 color;
+
               varying vec2 vUv;
 
               void main() {
@@ -805,6 +830,7 @@ const Taxi = forwardRef<
             `}
             fragmentShader={`
               uniform vec3 color;
+
               varying vec2 vUv;
 
               void main() {
@@ -920,6 +946,7 @@ const Taxi = forwardRef<
             `}
             fragmentShader={`
               uniform vec3 color;
+
               varying vec2 vUv;
 
               void main() {
