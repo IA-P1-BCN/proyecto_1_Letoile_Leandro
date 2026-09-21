@@ -66,14 +66,7 @@ export default function Scene() {
     action: () => Promise<void>
   ) => {
     backendQueueRef.current =
-      backendQueueRef.current
-        .then(action)
-        .catch((error) => {
-          console.error(
-            "Error en acción del backend:",
-            error
-          );
-        });
+      backendQueueRef.current.then(action);
 
     return backendQueueRef.current;
   };
@@ -92,10 +85,7 @@ export default function Scene() {
 
         if (cancelled) return;
 
-        // -------------------------------------------------
         // Hay una carrera activa
-        // -------------------------------------------------
-
         if (
           state.state === "moving" ||
           state.state === "stopped"
@@ -125,13 +115,9 @@ export default function Scene() {
           return;
         }
 
-        // -------------------------------------------------
         // No hay carrera activa
-        // -------------------------------------------------
-
         setAmount(0);
         setSpeed(0);
-
         setVehicleStatus("stopped");
 
         backendVehicleStatusRef.current =
@@ -173,14 +159,19 @@ export default function Scene() {
 
     transitionInProgressRef.current = true;
 
+    // Limpiamos inmediatamente el importe visual.
+    // El valor real de la nueva carrera
+    // será confirmado por el backend debajo.
+    setAmount(0);
+
     try {
       await enqueueBackendAction(
         async () => {
+          // Iniciar nueva carrera
           await startRide();
 
           // El backend es la fuente de verdad.
-          // Después de iniciar la nueva carrera,
-          // volvemos a consultar el current.
+          // Consultamos el current de la nueva carrera.
           const current =
             await getTaximeterCurrent();
 
@@ -227,6 +218,8 @@ export default function Scene() {
           const response =
             await finishRide();
 
+          // Conservamos el importe final
+          // de la carrera recién terminada.
           setAmount(response.total);
         }
       );
@@ -276,10 +269,6 @@ export default function Scene() {
     backendVehicleStatusRef.current =
       status;
 
-    // ---------------------------------------------------
-    // MOVING
-    // ---------------------------------------------------
-
     if (status === "moving") {
       enqueueBackendAction(
         async () => {
@@ -289,10 +278,6 @@ export default function Scene() {
 
       return;
     }
-
-    // ---------------------------------------------------
-    // STOPPED
-    // ---------------------------------------------------
 
     if (status === "stopped") {
       enqueueBackendAction(
@@ -379,9 +364,7 @@ export default function Scene() {
 
   const handleFinishSequence = () => {
     setSpeed(0);
-
     setVehicleStatus("stopped");
-
     setTripState("finished");
   };
 
@@ -413,9 +396,7 @@ export default function Scene() {
 
         <World />
 
-        <StartInstructions
-          visible={true}
-        />
+        <StartInstructions visible={true} />
 
         <Taxi
           ref={taxiRef}
