@@ -36,8 +36,16 @@ class Taximeter:
 
             return False, "Ya hay una carrera en curso"
 
-        self.ride = Ride()
-        self.ride.start()
+        ride = Ride()
+
+        if not ride.start():
+            self.logger.error(
+                "No se pudo iniciar la nueva carrera"
+            )
+
+            return False, "No se pudo iniciar la carrera"
+
+        self.ride = ride
 
         self.logger.info(
             "Carrera iniciada"
@@ -60,7 +68,12 @@ class Taximeter:
 
             return False, "El taxi ya está en movimiento"
 
-        self.ride.move()
+        if not self.ride.move():
+            self.logger.warning(
+                "Intento de mover el taxi en un estado no válido"
+            )
+
+            return False, "No se puede mover el taxi en su estado actual"
 
         self.logger.info(
             "Taxi en movimiento"
@@ -83,7 +96,12 @@ class Taximeter:
 
             return False, "El taxi ya está detenido"
 
-        self.ride.stop()
+        if not self.ride.stop():
+            self.logger.warning(
+                "Intento de detener el taxi en un estado no válido"
+            )
+
+            return False, "No se puede detener el taxi en su estado actual"
 
         self.logger.info(
             "Taxi detenido"
@@ -100,6 +118,13 @@ class Taximeter:
             return False, "No hay ninguna carrera en curso"
 
         times = self.ride.finish()
+
+        if times is None:
+            self.logger.warning(
+                "Intento de finalizar la carrera en un estado no válido"
+            )
+
+            return False, "No se puede finalizar la carrera en su estado actual"
 
         stopped_cost = (
             times["stopped_time"]

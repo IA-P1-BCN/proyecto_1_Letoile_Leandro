@@ -6,6 +6,7 @@ from backend.domain.taxi import Taxi
 
 
 class Ride:
+
     def __init__(self):
         self.taxi = Taxi()
         self.started = False
@@ -22,7 +23,8 @@ class Ride:
         if self.started:
             return False
 
-        self.taxi.start()
+        if not self.taxi.start():
+            return False
 
         self.started = True
         self.started_at = datetime.now().isoformat()
@@ -36,7 +38,7 @@ class Ride:
         if not self.started:
             return False
 
-        if self.taxi.state == TaxiState.MOVING:
+        if self.taxi.state != TaxiState.STOPPED:
             return False
 
         current_time = time.time()
@@ -45,7 +47,9 @@ class Ride:
             current_time - self.state_start_time
         )
 
-        self.taxi.move()
+        if not self.taxi.move():
+            return False
+
         self.state_start_time = current_time
 
         return True
@@ -54,7 +58,7 @@ class Ride:
         if not self.started:
             return False
 
-        if self.taxi.state == TaxiState.STOPPED:
+        if self.taxi.state != TaxiState.MOVING:
             return False
 
         current_time = time.time()
@@ -63,7 +67,9 @@ class Ride:
             current_time - self.state_start_time
         )
 
-        self.taxi.stop()
+        if not self.taxi.stop():
+            return False
+
         self.state_start_time = current_time
 
         return True
@@ -72,9 +78,17 @@ class Ride:
         if not self.started:
             return None
 
+        if self.taxi.state not in (
+            TaxiState.STOPPED,
+            TaxiState.MOVING
+        ):
+            return None
+
         current_time = time.time()
 
-        elapsed = current_time - self.state_start_time
+        elapsed = (
+            current_time - self.state_start_time
+        )
 
         if self.taxi.state == TaxiState.MOVING:
             self.moving_time += elapsed
@@ -82,9 +96,10 @@ class Ride:
         elif self.taxi.state == TaxiState.STOPPED:
             self.stopped_time += elapsed
 
-        self.finished_at = datetime.now().isoformat()
+        if not self.taxi.finish():
+            return None
 
-        self.taxi.finish()
+        self.finished_at = datetime.now().isoformat()
 
         self.started = False
         self.state_start_time = None

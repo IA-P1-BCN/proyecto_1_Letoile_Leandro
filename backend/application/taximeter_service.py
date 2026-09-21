@@ -2,6 +2,7 @@ from backend.domain.taximeter import Taximeter
 
 
 class TaximeterService:
+
     def __init__(self, taximeter=None):
         self.taximeter = taximeter or Taximeter()
 

@@ -1,4 +1,4 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 
 from backend.application.taximeter_service import TaximeterService
@@ -60,7 +60,15 @@ def get_taximeter_state():
     response_model=ActionResponse
 )
 def start_ride():
-    return service.start_ride()
+    result = service.start_ride()
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=409,
+            detail=result["message"]
+        )
+
+    return result
 
 
 @app.post(
@@ -68,7 +76,15 @@ def start_ride():
     response_model=ActionResponse
 )
 def move_ride():
-    return service.move_ride()
+    result = service.move_ride()
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=409,
+            detail=result["message"]
+        )
+
+    return result
 
 
 @app.post(
@@ -76,7 +92,15 @@ def move_ride():
     response_model=ActionResponse
 )
 def stop_ride():
-    return service.stop_ride()
+    result = service.stop_ride()
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=409,
+            detail=result["message"]
+        )
+
+    return result
 
 
 @app.post(
@@ -84,7 +108,15 @@ def stop_ride():
     response_model=RideFinishResponse
 )
 def finish_ride():
-    return service.finish_ride()
+    result = service.finish_ride()
+
+    if not result["success"]:
+        raise HTTPException(
+            status_code=409,
+            detail="No se puede finalizar la carrera"
+        )
+
+    return result
 
 
 @app.get(

@@ -54,6 +54,10 @@ class TestTaximeterAPI(unittest.TestCase):
 
         self.temp_dir.cleanup()
 
+    # =========================================================
+    # STATE
+    # =========================================================
+
     def test_get_state_initially_idle(self):
         response = self.client.get(
             "/api/taximeter/state"
@@ -70,6 +74,10 @@ class TestTaximeterAPI(unittest.TestCase):
                 "state": "idle"
             }
         )
+
+    # =========================================================
+    # START
+    # =========================================================
 
     def test_start_ride(self):
         response = self.client.post(
@@ -105,16 +113,19 @@ class TestTaximeterAPI(unittest.TestCase):
 
         self.assertEqual(
             second_response.status_code,
-            200
+            409
         )
 
         self.assertEqual(
             second_response.json(),
             {
-                "success": False,
-                "message": "Ya hay una carrera en curso"
+                "detail": "Ya hay una carrera en curso"
             }
         )
+
+    # =========================================================
+    # MOVE
+    # =========================================================
 
     def test_move_ride(self):
         self.client.post(
@@ -137,6 +148,52 @@ class TestTaximeterAPI(unittest.TestCase):
                 "message": "Estado: en movimiento"
             }
         )
+
+    def test_move_without_active_ride(self):
+        response = self.client.post(
+            "/api/rides/move"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            409
+        )
+
+        self.assertEqual(
+            response.json(),
+            {
+                "detail": "No hay ninguna carrera en curso"
+            }
+        )
+
+    def test_move_ride_twice(self):
+        self.client.post(
+            "/api/rides/start"
+        )
+
+        self.client.post(
+            "/api/rides/move"
+        )
+
+        response = self.client.post(
+            "/api/rides/move"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            409
+        )
+
+        self.assertEqual(
+            response.json(),
+            {
+                "detail": "El taxi ya está en movimiento"
+            }
+        )
+
+    # =========================================================
+    # STOP
+    # =========================================================
 
     def test_stop_ride(self):
         self.client.post(
@@ -163,6 +220,48 @@ class TestTaximeterAPI(unittest.TestCase):
                 "message": "Estado: detenido"
             }
         )
+
+    def test_stop_without_active_ride(self):
+        response = self.client.post(
+            "/api/rides/stop"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            409
+        )
+
+        self.assertEqual(
+            response.json(),
+            {
+                "detail": "No hay ninguna carrera en curso"
+            }
+        )
+
+    def test_stop_ride_twice(self):
+        self.client.post(
+            "/api/rides/start"
+        )
+
+        response = self.client.post(
+            "/api/rides/stop"
+        )
+
+        self.assertEqual(
+            response.status_code,
+            409
+        )
+
+        self.assertEqual(
+            response.json(),
+            {
+                "detail": "El taxi ya está detenido"
+            }
+        )
+
+    # =========================================================
+    # FINISH
+    # =========================================================
 
     def test_finish_ride(self):
         self.client.post(
@@ -239,14 +338,19 @@ class TestTaximeterAPI(unittest.TestCase):
 
         self.assertEqual(
             response.status_code,
-            200
+            409
         )
 
-        data = response.json()
-
-        self.assertFalse(
-            data["success"]
+        self.assertEqual(
+            response.json(),
+            {
+                "detail": "No se puede finalizar la carrera"
+            }
         )
+
+    # =========================================================
+    # HISTORY
+    # =========================================================
 
     def test_history(self):
         self.client.post(
