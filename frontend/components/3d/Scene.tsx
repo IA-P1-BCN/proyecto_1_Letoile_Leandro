@@ -4,7 +4,10 @@ import { Canvas } from "@react-three/fiber";
 import { useEffect, useRef, useState } from "react";
 import * as THREE from "three";
 
-import Taxi, { type VehicleStatus } from "./Taxi";
+import Taxi, {
+  type VehicleStatus,
+} from "./Taxi";
+
 import World from "./World";
 import CameraFollow from "./CameraFollow";
 import Taximeter from "./Taximeter";
@@ -12,13 +15,32 @@ import StartInstructions from "./StartInstructions";
 import FinishSequence from "./finish/FinishSequence";
 import useTaxiControls from "./controls/TaxiControls";
 
-type TripState = "idle" | "running" | "finishing" | "finished";
-type TaxiStatus = "idle" | "moving" | "stopped" | "finished";
+import {
+  startRide,
+  moveRide,
+  stopRide,
+  finishRide,
+  getTaximeterState,
+  getTaximeterCurrent,
+} from "../../lib/api/taximeter";
+
+type TripState =
+  | "idle"
+  | "running"
+  | "finishing"
+  | "finished";
+
+type TaxiStatus =
+  | "idle"
+  | "moving"
+  | "stopped"
+  | "finished";
 
 export default function Scene() {
   const taxiRef = useRef<THREE.Group>(null);
 
   const [speed, setSpeed] = useState(0);
+
   const [vehicleStatus, setVehicleStatus] =
     useState<VehicleStatus>("stopped");
 
@@ -27,11 +49,121 @@ export default function Scene() {
   const [tripState, setTripState] =
     useState<TripState>("idle");
 
+  const transitionInProgressRef =
+    useRef(false);
+
+  const backendVehicleStatusRef =
+    useRef<VehicleStatus>("stopped");
+
+  const backendQueueRef =
+    useRef<Promise<void>>(Promise.resolve());
+
+  // =====================================================
+  // BACKEND QUEUE
+  // =====================================================
+
+  const enqueueBackendAction = (
+    action: () => Promise<void>
+  ) => {
+    backendQueueRef.current =
+      backendQueueRef.current
+        .then(action)
+        .catch((error) => {
+          console.error(
+            "Error en acción del backend:",
+            error
+          );
+        });
+
+    return backendQueueRef.current;
+  };
+
+  // =====================================================
+  // RECUPERAR CARRERA DESPUÉS DE REFRESH
+  // =====================================================
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const recoverActiveRide = async () => {
+      try {
+        const state =
+          await getTaximeterState();
+
+        if (cancelled) return;
+
+        // -------------------------------------------------
+        // Hay una carrera activa
+        // -------------------------------------------------
+
+        if (
+          state.state === "moving" ||
+          state.state === "stopped"
+        ) {
+          const current =
+            await getTaximeterCurrent();
+
+          if (cancelled) return;
+
+          setAmount(current.total);
+
+          setVehicleStatus(
+            state.state === "moving"
+              ? "moving"
+              : "stopped"
+          );
+
+          backendVehicleStatusRef.current =
+            state.state === "moving"
+              ? "moving"
+              : "stopped";
+
+          setSpeed(0);
+
+          setTripState("running");
+
+          return;
+        }
+
+        // -------------------------------------------------
+        // No hay carrera activa
+        // -------------------------------------------------
+
+        setAmount(0);
+        setSpeed(0);
+
+        setVehicleStatus("stopped");
+
+        backendVehicleStatusRef.current =
+          "stopped";
+
+        setTripState("idle");
+      } catch (error) {
+        if (cancelled) return;
+
+        console.error(
+          "Error recuperando el estado del taxímetro:",
+          error
+        );
+      }
+    };
+
+    recoverActiveRide();
+
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   // =====================================================
   // START
   // =====================================================
 
-  const handleStart = () => {
+  const handleStart = async () => {
+    if (transitionInProgressRef.current) {
+      return;
+    }
+
     if (
       tripState !== "idle" &&
       tripState !== "finished"
@@ -39,24 +171,136 @@ export default function Scene() {
       return;
     }
 
-    setAmount(0);
-    setSpeed(0);
-    setVehicleStatus("stopped");
-    setTripState("running");
+    transitionInProgressRef.current = true;
+
+    try {
+      await enqueueBackendAction(
+        async () => {
+          await startRide();
+
+          // El backend es la fuente de verdad.
+          // Después de iniciar la nueva carrera,
+          // volvemos a consultar el current.
+          const current =
+            await getTaximeterCurrent();
+
+          setAmount(current.total);
+        }
+      );
+
+      setSpeed(0);
+
+      setVehicleStatus("stopped");
+
+      backendVehicleStatusRef.current =
+        "stopped";
+
+      setTripState("running");
+    } catch (error) {
+      console.error(
+        "Error iniciando la carrera:",
+        error
+      );
+    } finally {
+      transitionInProgressRef.current = false;
+    }
   };
 
   // =====================================================
   // FINISH
   // =====================================================
 
-  const handleFinish = () => {
+  const handleFinish = async () => {
+    if (transitionInProgressRef.current) {
+      return;
+    }
+
     if (tripState !== "running") {
       return;
     }
 
-    setSpeed(0);
-    setVehicleStatus("stopped");
-    setTripState("finishing");
+    transitionInProgressRef.current = true;
+
+    try {
+      await enqueueBackendAction(
+        async () => {
+          const response =
+            await finishRide();
+
+          setAmount(response.total);
+        }
+      );
+
+      setSpeed(0);
+
+      setVehicleStatus("stopped");
+
+      backendVehicleStatusRef.current =
+        "stopped";
+
+      setTripState("finishing");
+    } catch (error) {
+      console.error(
+        "Error finalizando la carrera:",
+        error
+      );
+    } finally {
+      transitionInProgressRef.current = false;
+    }
+  };
+
+  // =====================================================
+  // CAMBIO DE ESTADO DEL TAXI
+  // =====================================================
+
+  const handleVehicleStatusChange = (
+    status: VehicleStatus
+  ) => {
+    setVehicleStatus(status);
+
+    if (tripState !== "running") {
+      return;
+    }
+
+    if (transitionInProgressRef.current) {
+      return;
+    }
+
+    if (
+      backendVehicleStatusRef.current ===
+      status
+    ) {
+      return;
+    }
+
+    backendVehicleStatusRef.current =
+      status;
+
+    // ---------------------------------------------------
+    // MOVING
+    // ---------------------------------------------------
+
+    if (status === "moving") {
+      enqueueBackendAction(
+        async () => {
+          await moveRide();
+        }
+      );
+
+      return;
+    }
+
+    // ---------------------------------------------------
+    // STOPPED
+    // ---------------------------------------------------
+
+    if (status === "stopped") {
+      enqueueBackendAction(
+        async () => {
+          await stopRide();
+        }
+      );
+    }
   };
 
   // =====================================================
@@ -69,7 +313,7 @@ export default function Scene() {
   });
 
   // =====================================================
-  // ESTADO DEL TAXI
+  // ESTADO PARA EL TAXÍMETRO VISUAL
   // =====================================================
 
   const status: TaxiStatus =
@@ -84,7 +328,7 @@ export default function Scene() {
             : "stopped";
 
   // =====================================================
-  // TAXÍMETRO
+  // SINCRONIZAR PRECIO CON BACKEND
   // =====================================================
 
   useEffect(() => {
@@ -92,37 +336,57 @@ export default function Scene() {
       return;
     }
 
-    const interval = window.setInterval(() => {
-      setAmount((currentAmount) => {
-        const pricePerSecond =
-          vehicleStatus === "moving"
-            ? 0.05
-            : 0.02;
+    let cancelled = false;
 
-        return (
-          currentAmount +
-          pricePerSecond * 0.1
+    const syncTaximeter = async () => {
+      try {
+        const current =
+          await getTaximeterCurrent();
+
+        if (cancelled) {
+          return;
+        }
+
+        setAmount(current.total);
+      } catch (error) {
+        console.error(
+          "Error sincronizando taxímetro:",
+          error
         );
-      });
-    }, 100);
+      }
+    };
+
+    syncTaximeter();
+
+    const interval =
+      window.setInterval(
+        syncTaximeter,
+        250
+      );
 
     return () => {
-      window.clearInterval(interval);
+      cancelled = true;
+
+      window.clearInterval(
+        interval
+      );
     };
-  }, [tripState, vehicleStatus]);
+  }, [tripState]);
 
   // =====================================================
-  // FINISH SEQUENCE
+  // FIN DE ANIMACIÓN
   // =====================================================
 
   const handleFinishSequence = () => {
     setSpeed(0);
+
     setVehicleStatus("stopped");
+
     setTripState("finished");
   };
 
   // =====================================================
-  // SCENE
+  // RENDER
   // =====================================================
 
   return (
@@ -135,14 +399,10 @@ export default function Scene() {
           far: 180,
         }}
       >
-        {/* BACKGROUND */}
-
         <color
           attach="background"
           args={["#07111f"]}
         />
-
-        {/* LIGHTING */}
 
         <ambientLight intensity={1.2} />
 
@@ -151,30 +411,26 @@ export default function Scene() {
           intensity={1.4}
         />
 
-        {/* WORLD */}
-
         <World />
 
-        {/* START INSTRUCTIONS */}
-
-        <StartInstructions visible={true} />
-
-        {/* TAXI */}
+        <StartInstructions
+          visible={true}
+        />
 
         <Taxi
           ref={taxiRef}
           controls={controls}
-          tripActive={tripState === "running"}
+          tripActive={
+            tripState === "running"
+          }
           visible={
             tripState !== "idle"
           }
           onSpeedChange={setSpeed}
           onVehicleStatusChange={
-            setVehicleStatus
+            handleVehicleStatusChange
           }
         />
-
-        {/* FINISH SEQUENCE */}
 
         <FinishSequence
           taxiRef={taxiRef}
@@ -185,8 +441,6 @@ export default function Scene() {
             handleFinishSequence
           }
         />
-
-        {/* CAMERA */}
 
         <CameraFollow
           target={taxiRef}
@@ -204,8 +458,6 @@ export default function Scene() {
           }
         />
       </Canvas>
-
-      {/* TAXIMETER */}
 
       <Taximeter
         amount={amount}

@@ -19,15 +19,11 @@ type TaxiProps = {
   controls: React.RefObject<
     TaxiControlsState | null
   >;
-
   tripActive: boolean;
-
   visible?: boolean;
-
   onSpeedChange?: (
     speed: number
   ) => void;
-
   onVehicleStatusChange?: (
     status: VehicleStatus
   ) => void;
@@ -82,12 +78,16 @@ const Taxi = forwardRef<
     );
 
     const taxiBounds = useMemo(() => {
-      const box = new THREE.Box3().setFromObject(
-        scene
-      );
+      const box =
+        new THREE.Box3().setFromObject(
+          scene
+        );
 
-      const center = new THREE.Vector3();
-      const size = new THREE.Vector3();
+      const center =
+        new THREE.Vector3();
+
+      const size =
+        new THREE.Vector3();
 
       box.getCenter(center);
       box.getSize(size);
@@ -102,17 +102,18 @@ const Taxi = forwardRef<
     const modelScale = 0.69;
 
     const taxiCenterX =
-      taxiBounds.center.x * modelScale;
+      taxiBounds.center.x *
+      modelScale;
 
     const taxiCenterZ =
-      taxiBounds.center.z * modelScale;
+      taxiBounds.center.z *
+      modelScale;
 
     // =====================================================
     // GLOW DEL TAXI
     // =====================================================
 
     const glowY = -0.30;
-
     const frontOffset = -1.5;
     const rearOffset = 1.5;
 
@@ -140,7 +141,8 @@ const Taxi = forwardRef<
         return;
       }
 
-      const input = controls.current;
+      const input =
+        controls.current;
 
       // ===================================================
       // VIAJE INACTIVO
@@ -170,6 +172,10 @@ const Taxi = forwardRef<
           lastVehicleStatus.current =
             "stopped";
 
+          console.log(
+            "TAXI → SCENE STATUS: stopped"
+          );
+
           onVehicleStatusChange?.(
             "stopped"
           );
@@ -191,7 +197,8 @@ const Taxi = forwardRef<
         introProgress.current = 0;
 
         taxi.position.y =
-          baseY + introStartHeight;
+          baseY +
+          introStartHeight;
 
         taxi.scale.set(
           1,
@@ -206,7 +213,8 @@ const Taxi = forwardRef<
 
       if (!introFinished.current) {
         introProgress.current +=
-          delta / introDuration;
+          delta /
+          introDuration;
 
         const t =
           THREE.MathUtils.clamp(
@@ -241,43 +249,52 @@ const Taxi = forwardRef<
 
         if (t < 0.82) {
           const fallAmount =
-            1 - t / 0.82;
+            1 -
+            t / 0.82;
 
           scaleY =
             1 +
-            fallAmount * 0.07;
+            fallAmount *
+              0.07;
 
           scaleX =
             1 -
-            fallAmount * 0.025;
+            fallAmount *
+              0.025;
 
           scaleZ =
             1 -
-            fallAmount * 0.025;
+            fallAmount *
+              0.025;
         } else {
-          // ===============================================
+          // =============================================
           // LANDING / BOUNCE
-          // ===============================================
+          // =============================================
 
           const landingT =
-            (t - 0.82) / 0.18;
+            (t - 0.82) /
+            0.18;
 
           const bounce =
             Math.sin(
-              landingT * Math.PI
+              landingT *
+                Math.PI
             );
 
           scaleY =
             1 -
-            bounce * 0.045;
+            bounce *
+              0.045;
 
           scaleX =
             1 +
-            bounce * 0.025;
+            bounce *
+              0.025;
 
           scaleZ =
             1 +
-            bounce * 0.025;
+            bounce *
+              0.025;
         }
 
         taxi.scale.set(
@@ -286,14 +303,16 @@ const Taxi = forwardRef<
           scaleZ
         );
 
-        // ===============================================
+        // =============================================
         // FINAL DE LA ANIMACIÓN
-        // ===============================================
+        // =============================================
 
         if (t >= 1) {
-          introFinished.current = true;
+          introFinished.current =
+            true;
 
-          taxi.position.y = baseY;
+          taxi.position.y =
+            baseY;
 
           taxi.scale.set(
             1,
@@ -302,16 +321,19 @@ const Taxi = forwardRef<
           );
         }
 
-        // ===============================================
+        // =============================================
         // NO PERMITIR MOVIMIENTO DURANTE LA CAÍDA
-        // ===============================================
+        // =============================================
 
         speed.current = 0;
 
         if (
-          lastReportedSpeed.current !== 0
+          lastReportedSpeed.current !==
+          0
         ) {
-          lastReportedSpeed.current = 0;
+          lastReportedSpeed.current =
+            0;
+
           onSpeedChange?.(0);
         }
 
@@ -321,6 +343,10 @@ const Taxi = forwardRef<
         ) {
           lastVehicleStatus.current =
             "stopped";
+
+          console.log(
+            "TAXI → SCENE STATUS: stopped"
+          );
 
           onVehicleStatusChange?.(
             "stopped"
@@ -339,7 +365,8 @@ const Taxi = forwardRef<
         !input.brake
       ) {
         speed.current +=
-          acceleration * delta;
+          acceleration *
+          delta;
       }
 
       // ===================================================
@@ -347,11 +374,13 @@ const Taxi = forwardRef<
       // ===================================================
 
       if (input.brake) {
-        speed.current = Math.max(
-          0,
-          speed.current -
-            braking * delta
-        );
+        speed.current =
+          Math.max(
+            0,
+            speed.current -
+              braking *
+                delta
+          );
       }
 
       // ===================================================
@@ -362,11 +391,13 @@ const Taxi = forwardRef<
         !input.forward &&
         !input.brake
       ) {
-        speed.current = Math.max(
-          0,
-          speed.current -
-            friction * delta
-        );
+        speed.current =
+          Math.max(
+            0,
+            speed.current -
+              friction *
+                delta
+          );
       }
 
       // ===================================================
@@ -403,15 +434,32 @@ const Taxi = forwardRef<
       // ESTADO SEGÚN VELOCIDAD REAL
       // ===================================================
 
-      const currentVehicleStatus =
+      const currentVehicleStatus: VehicleStatus =
         speed.current > 0.1
           ? "moving"
           : "stopped";
+
+      // ===================================================
+      // CAMBIO DE ESTADO
+      // ===================================================
 
       if (
         currentVehicleStatus !==
         lastVehicleStatus.current
       ) {
+        console.log(
+          "TAXI → SCENE STATUS:",
+          currentVehicleStatus,
+          {
+            speed:
+              speed.current,
+            forward:
+              input.forward,
+            brake:
+              input.brake,
+          }
+        );
+
         lastVehicleStatus.current =
           currentVehicleStatus;
 
@@ -424,15 +472,19 @@ const Taxi = forwardRef<
       // GIRO
       // ===================================================
 
-      if (speed.current > 0.1) {
+      if (
+        speed.current > 0.1
+      ) {
         if (input.left) {
           taxi.rotation.y +=
-            rotationSpeed * delta;
+            rotationSpeed *
+            delta;
         }
 
         if (input.right) {
           taxi.rotation.y -=
-            rotationSpeed * delta;
+            rotationSpeed *
+            delta;
         }
       }
 
@@ -440,7 +492,9 @@ const Taxi = forwardRef<
       // MOVIMIENTO
       // ===================================================
 
-      if (speed.current > 0) {
+      if (
+        speed.current > 0
+      ) {
         const forward =
           new THREE.Vector3(
             0,
@@ -454,7 +508,8 @@ const Taxi = forwardRef<
 
         taxi.position.addScaledVector(
           forward,
-          speed.current * delta
+          speed.current *
+            delta
         );
       }
     });
@@ -462,7 +517,11 @@ const Taxi = forwardRef<
     return (
       <group
         ref={ref}
-        position={[-1, baseY, 76]}
+        position={[
+          -1,
+          baseY,
+          76,
+        ]}
         visible={visible}
       >
         {/* =====================================================
@@ -478,7 +537,8 @@ const Taxi = forwardRef<
           position={[
             taxiCenterX - 1.35,
             glowY,
-            taxiCenterZ + frontOffset,
+            taxiCenterZ +
+              frontOffset,
           ]}
           renderOrder={1}
         >
@@ -557,7 +617,10 @@ const Taxi = forwardRef<
                   roundedSides;
 
                 glow =
-                  pow(glow, 1.65);
+                  pow(
+                    glow,
+                    1.65
+                  );
 
                 float alpha =
                   glow * 0.20;
@@ -589,7 +652,8 @@ const Taxi = forwardRef<
           position={[
             taxiCenterX + 1.35,
             glowY,
-            taxiCenterZ + frontOffset,
+            taxiCenterZ +
+              frontOffset,
           ]}
           renderOrder={1}
         >
@@ -668,7 +732,10 @@ const Taxi = forwardRef<
                   roundedSides;
 
                 glow =
-                  pow(glow, 1.65);
+                  pow(
+                    glow,
+                    1.65
+                  );
 
                 float alpha =
                   glow * 0.20;
@@ -700,7 +767,8 @@ const Taxi = forwardRef<
           position={[
             taxiCenterX - 1.35,
             glowY,
-            taxiCenterZ + rearOffset,
+            taxiCenterZ +
+              rearOffset,
           ]}
           renderOrder={1}
         >
@@ -779,7 +847,10 @@ const Taxi = forwardRef<
                   roundedSides;
 
                 glow =
-                  pow(glow, 1.65);
+                  pow(
+                    glow,
+                    1.65
+                  );
 
                 float alpha =
                   glow * 0.20;
@@ -811,7 +882,8 @@ const Taxi = forwardRef<
           position={[
             taxiCenterX + 1.35,
             glowY,
-            taxiCenterZ + rearOffset,
+            taxiCenterZ +
+              rearOffset,
           ]}
           renderOrder={1}
         >
@@ -890,7 +962,10 @@ const Taxi = forwardRef<
                   roundedSides;
 
                 glow =
-                  pow(glow, 1.65);
+                  pow(
+                    glow,
+                    1.65
+                  );
 
                 float alpha =
                   glow * 0.20;
