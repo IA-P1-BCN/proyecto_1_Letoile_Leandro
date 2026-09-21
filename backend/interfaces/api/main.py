@@ -1,4 +1,5 @@
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 
 from backend.application.taximeter_service import TaximeterService
@@ -6,6 +7,15 @@ from backend.application.taximeter_service import TaximeterService
 
 class TaximeterStateResponse(BaseModel):
     state: str
+
+
+class TaximeterCurrentResponse(BaseModel):
+    state: str
+    stopped_time: float
+    moving_time: float
+    stopped_cost: float
+    moving_cost: float
+    total: float
 
 
 class ActionResponse(BaseModel):
@@ -42,8 +52,28 @@ app = FastAPI(
 )
 
 
+# =====================================================
+# CORS
+# =====================================================
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+
 service = TaximeterService()
 
+
+# =====================================================
+# TAXIMETER
+# =====================================================
 
 @app.get(
     "/api/taximeter/state",
@@ -54,6 +84,18 @@ def get_taximeter_state():
         "state": service.get_state()
     }
 
+
+@app.get(
+    "/api/taximeter/current",
+    response_model=TaximeterCurrentResponse
+)
+def get_taximeter_current():
+    return service.get_current()
+
+
+# =====================================================
+# RIDES
+# =====================================================
 
 @app.post(
     "/api/rides/start",
@@ -118,6 +160,10 @@ def finish_ride():
 
     return result
 
+
+# =====================================================
+# HISTORY
+# =====================================================
 
 @app.get(
     "/api/rides/history",

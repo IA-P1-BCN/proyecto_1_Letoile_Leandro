@@ -74,6 +74,33 @@ class Ride:
 
         return True
 
+    def get_current_times(self):
+        if not self.started:
+            return {
+                "stopped_time": self.stopped_time,
+                "moving_time": self.moving_time,
+            }
+
+        current_time = time.time()
+
+        elapsed = (
+            current_time - self.state_start_time
+        )
+
+        stopped_time = self.stopped_time
+        moving_time = self.moving_time
+
+        if self.taxi.state == TaxiState.STOPPED:
+            stopped_time += elapsed
+
+        elif self.taxi.state == TaxiState.MOVING:
+            moving_time += elapsed
+
+        return {
+            "stopped_time": stopped_time,
+            "moving_time": moving_time,
+        }
+
     def finish(self):
         if not self.started:
             return None

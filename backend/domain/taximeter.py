@@ -109,6 +109,40 @@ class Taximeter:
 
         return True, "Estado: detenido"
 
+    def get_current(self):
+        if self.ride is None:
+            return {
+                "state": TaxiState.IDLE.value,
+                "stopped_time": 0.0,
+                "moving_time": 0.0,
+                "stopped_cost": 0.0,
+                "moving_cost": 0.0,
+                "total": 0.0,
+            }
+
+        times = self.ride.get_current_times()
+
+        stopped_cost = (
+            times["stopped_time"]
+            * self.tariff_config.stopped_rate
+        )
+
+        moving_cost = (
+            times["moving_time"]
+            * self.tariff_config.moving_rate
+        )
+
+        total = stopped_cost + moving_cost
+
+        return {
+            "state": self.ride.taxi.state.value,
+            "stopped_time": times["stopped_time"],
+            "moving_time": times["moving_time"],
+            "stopped_cost": stopped_cost,
+            "moving_cost": moving_cost,
+            "total": total,
+        }
+
     def finish(self):
         if self.ride is None:
             self.logger.error(

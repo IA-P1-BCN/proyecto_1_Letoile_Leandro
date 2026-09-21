@@ -9,6 +9,9 @@ class TaximeterService:
     def get_state(self):
         return self.taximeter.get_state()
 
+    def get_current(self):
+        return self.taximeter.get_current()
+
     def start_ride(self):
         success, message = self.taximeter.start()
 
