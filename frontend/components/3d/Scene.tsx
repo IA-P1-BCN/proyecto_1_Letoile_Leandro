@@ -11,6 +11,7 @@ import Taximeter from "./Taximeter";
 import StartInstructions from "./StartInstructions";
 import FinishSequence from "./finish/FinishSequence";
 import useTaxiControls from "./controls/TaxiControls";
+import RideHistory from "./history/RideHistory";
 
 import useTaximeterController from "../../hooks/useTaximeterController";
 
@@ -21,8 +22,7 @@ type TaxiStatus =
   | "finished";
 
 export default function Scene() {
-  const taxiRef =
-    useRef<THREE.Group>(null);
+  const taxiRef = useRef<THREE.Group>(null);
 
   const {
     tripState,
@@ -91,12 +91,8 @@ export default function Scene() {
         <Taxi
           ref={taxiRef}
           controls={controls}
-          tripActive={
-            tripState === "running"
-          }
-          visible={
-            tripState !== "idle"
-          }
+          tripActive={tripState === "running"}
+          visible={tripState !== "idle"}
           onSpeedChange={() => {}}
           onVehicleStatusChange={
             handleVehicleStatusChange
@@ -105,35 +101,33 @@ export default function Scene() {
 
         <FinishSequence
           taxiRef={taxiRef}
-          active={
-            tripState === "finishing"
-          }
-          onFinished={
-            handleFinishSequence
-          }
+          active={tripState === "finishing"}
+          onFinished={handleFinishSequence}
         />
 
         <CameraFollow
           target={taxiRef}
-          started={
-            tripState === "running"
-          }
-          intro={
-            tripState === "idle"
-          }
-          finishing={
-            tripState === "finishing"
-          }
-          finished={
-            tripState === "finished"
-          }
+          started={tripState === "running"}
+          intro={tripState === "idle"}
+          finishing={tripState === "finishing"}
+          finished={tripState === "finished"}
         />
       </Canvas>
+
+      {/* =====================================================
+          TAXÍMETRO
+      ===================================================== */}
 
       <Taximeter
         amount={amount}
         status={status}
       />
+
+      {/* =====================================================
+          HISTORIAL
+      ===================================================== */}
+
+      <RideHistory />
     </>
   );
 }
