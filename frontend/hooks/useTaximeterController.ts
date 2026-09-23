@@ -50,7 +50,7 @@ export default function useTaximeterController(
   const backendQueueRef =
     useRef<Promise<void>>(Promise.resolve());
 
-  /*
+  /**
    * Identifica la generación actual de sincronización.
    *
    * Si una petición vieja vuelve después de un cambio
@@ -58,11 +58,18 @@ export default function useTaximeterController(
    */
   const syncGenerationRef = useRef(0);
 
-  /*
+  /**
    * Evita que dos reconciliaciones se ejecuten
    * simultáneamente.
    */
   const reconcileInProgressRef =
+    useRef(false);
+
+  /**
+   * Evita ejecutar más de una vez la lógica
+   * de recuperación después de un refresh.
+   */
+  const refreshRecoveryDoneRef =
     useRef(false);
 
   // =====================================================
@@ -74,7 +81,7 @@ export default function useTaximeterController(
       const actionPromise =
         backendQueueRef.current.then(action);
 
-      /*
+      /**
        * La cola continúa funcionando incluso si una
        * acción anterior falla.
        */
@@ -105,7 +112,7 @@ export default function useTaximeterController(
         const state =
           await getTaximeterState();
 
-        /*
+        /**
          * Si durante la petición cambió la generación,
          * esta respuesta ya no representa necesariamente
          * la carrera actual.
@@ -135,7 +142,7 @@ export default function useTaximeterController(
             return;
           }
 
-          /*
+          /**
            * Si estamos mostrando la animación final,
            * mantenemos el importe final y dejamos que
            * Scene controle el paso a "finished".
@@ -145,6 +152,7 @@ export default function useTaximeterController(
             tripState !== "finished"
           ) {
             setAmount(current.total);
+
             setVehicleStatus("stopped");
 
             backendVehicleStatusRef.current =
@@ -184,7 +192,7 @@ export default function useTaximeterController(
             "stopped";
         }
 
-        /*
+        /**
          * Si el frontend estaba idle/finished,
          * significa que el backend tiene una carrera
          * activa que el frontend necesita recuperar.
@@ -207,12 +215,191 @@ export default function useTaximeterController(
     }, [tripState]);
 
   // =====================================================
-  // RECUPERACIÓN INICIAL
+  // RECUPERACIÓN INICIAL / REFRESH
   // =====================================================
 
   useEffect(() => {
-    reconcileWithBackend();
-  }, [reconcileWithBackend]);
+    const recoverInitialState =
+      async () => {
+        /**
+         * Solo queremos finalizar automáticamente
+         * una carrera cuando la página se abrió por
+         * un REFRESH real.
+         *
+         * Minimizar la ventana no ejecuta esta lógica.
+         */
+        const navigationEntry =
+          performance.getEntriesByType(
+            "navigation"
+          )[0] as
+            | PerformanceNavigationTiming
+            | undefined;
+
+        const isRefresh =
+          navigationEntry?.type === "reload";
+
+        /**
+         * Evitamos ejecutar la recuperación más
+         * de una vez durante el ciclo de vida
+         * de este componente.
+         */
+        if (
+          refreshRecoveryDoneRef.current
+        ) {
+          return;
+        }
+
+        refreshRecoveryDoneRef.current =
+          true;
+
+        try {
+          /**
+           * Primero comprobamos el estado REAL
+           * del backend.
+           */
+          const state =
+            await getTaximeterState();
+
+          const backendState =
+            state.state as BackendRideState;
+
+          // =================================================
+          // REFRESH + CARRERA ACTIVA
+          // =================================================
+
+          if (
+            isRefresh &&
+            backendState !== "idle"
+          ) {
+            /**
+             * Invalidamos cualquier GET anterior.
+             */
+            syncGenerationRef.current += 1;
+
+            /**
+             * Finalizamos la carrera anterior.
+             *
+             * Esto:
+             * 1. guarda el RideRecord
+             * 2. ejecuta self.ride = None
+             * 3. deja el current del backend en cero
+             */
+            await enqueueBackendAction(
+              async () => {
+                await finishRide();
+              }
+            );
+
+            /**
+             * MUY IMPORTANTE:
+             *
+             * No usamos response.total aquí.
+             *
+             * Ese total pertenece a la carrera anterior.
+             *
+             * Después de finishRide(), el backend debería
+             * estar en:
+             *
+             * state = idle
+             * total = 0
+             */
+            const current =
+              await getTaximeterCurrent();
+
+            /**
+             * Invalidamos nuevamente cualquier respuesta
+             * anterior antes de modificar el estado visual.
+             */
+            syncGenerationRef.current += 1;
+
+            /**
+             * El frontend vuelve explícitamente a cero.
+             *
+             * current.total debería ser 0 porque el backend
+             * ya no tiene una carrera activa.
+             *
+             * Usamos 0 directamente porque el objetivo del
+             * refresh es comenzar una sesión limpia.
+             */
+            setAmount(0);
+
+            setVehicleStatus("stopped");
+
+            backendVehicleStatusRef.current =
+              "stopped";
+
+            setTripState("idle");
+
+            /**
+             * Si por algún motivo el backend devolviera
+             * un current inesperado, lo dejamos registrado
+             * para poder detectar el problema sin volver a
+             * mostrar el importe anterior.
+             */
+            if (current.total !== 0) {
+              console.warn(
+                "El backend finalizó la carrera pero current.total no quedó en 0:",
+                current.total
+              );
+            }
+
+            return;
+          }
+
+          // =================================================
+          // REFRESH SIN CARRERA ACTIVA
+          // =================================================
+
+          if (isRefresh) {
+            /**
+             * Si no había carrera activa, igualmente
+             * dejamos el frontend limpio.
+             */
+            syncGenerationRef.current += 1;
+
+            setAmount(0);
+
+            setVehicleStatus("stopped");
+
+            backendVehicleStatusRef.current =
+              "stopped";
+
+            setTripState("idle");
+
+            return;
+          }
+
+          // =================================================
+          // CARGA NORMAL
+          // =================================================
+
+          /**
+           * Si NO fue un refresh, hacemos la
+           * reconciliación habitual.
+           *
+           * Esto permite recuperar una carrera que
+           * sigue activa en backend.
+           */
+          await reconcileWithBackend();
+        } catch (error) {
+          console.error(
+            "Error recuperando estado inicial del taxímetro:",
+            error
+          );
+
+          /**
+           * Si algo falla, intentamos recuperar
+           * igualmente el estado real del backend.
+           */
+          await reconcileWithBackend();
+        }
+      };
+
+    recoverInitialState();
+  }, [
+    enqueueBackendAction,
+    reconcileWithBackend,
+  ]);
 
   // =====================================================
   // RECUPERACIÓN AL VOLVER A LA VENTANA
@@ -228,7 +415,7 @@ export default function useTaximeterController(
           return;
         }
 
-        /*
+        /**
          * Invalidamos respuestas anteriores.
          */
         syncGenerationRef.current += 1;
@@ -271,13 +458,14 @@ export default function useTaximeterController(
       transitionInProgressRef.current =
         true;
 
-      /*
+      /**
        * Nueva generación.
+       *
        * Cualquier GET anterior deja de ser válido.
        */
       syncGenerationRef.current += 1;
 
-      /*
+      /**
        * Reset visual inmediato.
        */
       setAmount(0);
@@ -285,12 +473,12 @@ export default function useTaximeterController(
       try {
         await enqueueBackendAction(
           async () => {
-            /*
+            /**
              * El backend inicia la nueva carrera.
              */
             await startRide();
 
-            /*
+            /**
              * Confirmamos el estado real de la
              * nueva carrera.
              */
@@ -331,7 +519,7 @@ export default function useTaximeterController(
           error
         );
 
-        /*
+        /**
          * Si Start falla, volvemos a consultar
          * el backend para recuperar el estado real.
          */
@@ -367,7 +555,7 @@ export default function useTaximeterController(
       transitionInProgressRef.current =
         true;
 
-      /*
+      /**
        * Invalidamos requests anteriores.
        */
       syncGenerationRef.current += 1;
@@ -375,19 +563,22 @@ export default function useTaximeterController(
       try {
         await enqueueBackendAction(
           async () => {
-            /*
+            /**
              * El backend confirma la finalización.
              */
             const response =
               await finishRide();
 
-            /*
+            /**
              * El importe final pertenece a la
              * carrera recién terminada.
+             *
+             * Este importe se conserva durante
+             * toda la animación final.
              */
             setAmount(response.total);
 
-            /*
+            /**
              * Backend ya está en idle.
              */
             backendVehicleStatusRef.current =
@@ -397,7 +588,7 @@ export default function useTaximeterController(
           }
         );
 
-        /*
+        /**
          * Recién después de que finishRide()
          * terminó correctamente comenzamos
          * la animación visual.
@@ -409,7 +600,7 @@ export default function useTaximeterController(
           error
         );
 
-        /*
+        /**
          * No pasamos a "finishing" si el backend
          * no confirmó el finish.
          */
@@ -452,7 +643,7 @@ export default function useTaximeterController(
           return;
         }
 
-        /*
+        /**
          * Actualizamos inmediatamente la referencia
          * para evitar enviar la misma transición
          * varias veces.
@@ -528,7 +719,7 @@ export default function useTaximeterController(
         return;
       }
 
-      /*
+      /**
        * No iniciamos otro GET si ya estamos
        * reconciliando.
        */
@@ -553,7 +744,7 @@ export default function useTaximeterController(
           return;
         }
 
-        /*
+        /**
          * Si el backend informa idle,
          * el frontend quedó desincronizado.
          */
@@ -585,7 +776,6 @@ export default function useTaximeterController(
 
     return () => {
       cancelled = true;
-
       window.clearInterval(interval);
     };
   }, [
