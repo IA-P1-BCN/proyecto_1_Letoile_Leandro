@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 import Scene from "@/components/3d/Scene";
 import LoginForm from "./LoginForm";
@@ -30,6 +30,9 @@ export default function AuthGate() {
     useState(false);
 
   const [userMenuOpen, setUserMenuOpen] =
+    useState(false);
+
+  const [sceneReady, setSceneReady] =
     useState(false);
 
   useEffect(() => {
@@ -64,6 +67,10 @@ export default function AuthGate() {
     };
 
     checkSession();
+  }, []);
+
+  const handleSceneReady = useCallback(() => {
+    setSceneReady(true);
   }, []);
 
   const handleLogout = async () => {
@@ -108,10 +115,84 @@ export default function AuthGate() {
         <Scene
           historyOpen={historyOpen}
           onHistoryOpenChange={setHistoryOpen}
+          onReady={handleSceneReady}
         />
       </main>
 
-      <div className="user-menu-container">
+      {!sceneReady && (
+        <div className="scene-loading">
+          <div className="scene-loading-grid" />
+
+          <div className="scene-loading-glow scene-loading-glow-one" />
+          <div className="scene-loading-glow scene-loading-glow-two" />
+
+          <div className="scene-loading-content">
+            <div className="scene-loading-brand">
+              <span className="scene-loading-mark">
+                TT
+              </span>
+
+              <div>
+                <div className="scene-loading-name">
+                  TaxiTech
+                </div>
+
+                <div className="scene-loading-subtitle">
+                  Solutions
+                </div>
+              </div>
+            </div>
+
+            <div className="scene-loading-divider" />
+
+            <div className="scene-loading-label">
+              TTX-247 · SIMULACIÓN 3D
+            </div>
+
+            <h1 className="scene-loading-title">
+              Inicializando
+              <span> entorno</span>
+            </h1>
+
+            <p className="scene-loading-description">
+              Preparando el sistema de simulación
+              y cargando el entorno 3D.
+            </p>
+
+            <div className="scene-loading-loader">
+              <div className="scene-loading-loader-track">
+                <div className="scene-loading-loader-bar" />
+              </div>
+
+              <div className="scene-loading-loader-info">
+                <span>
+                  CARGANDO ENTORNO
+                </span>
+
+                <span className="scene-loading-dots">
+                  <i />
+                  <i />
+                  <i />
+                </span>
+              </div>
+            </div>
+
+            <div className="scene-loading-status">
+              <span className="scene-loading-status-dot" />
+
+              SISTEMA OPERATIVO
+            </div>
+          </div>
+        </div>
+      )}
+
+      <div
+        className={`user-menu-container ${
+          sceneReady
+            ? "user-menu-visible"
+            : "user-menu-hidden"
+        }`}
+      >
         <button
           type="button"
           className="user-menu-button"
@@ -134,6 +215,7 @@ export default function AuthGate() {
 
             <span className="user-menu-status">
               <span className="user-menu-status-dot" />
+
               SESSION ACTIVE
             </span>
           </span>
@@ -174,7 +256,9 @@ export default function AuthGate() {
 
               <div>
                 <span>ACCESS</span>
-                <strong>{role.toUpperCase()}</strong>
+                <strong>
+                  {role.toUpperCase()}
+                </strong>
               </div>
             </div>
 
@@ -189,6 +273,7 @@ export default function AuthGate() {
 
               <span>
                 <strong>Historial</strong>
+
                 <small>
                   Consultar carreras registradas
                 </small>

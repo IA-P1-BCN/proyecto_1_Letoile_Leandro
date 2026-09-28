@@ -5,6 +5,10 @@ import bcrypt
 import mysql.connector
 
 
+DEFAULT_USERNAME = "admin"
+DEFAULT_PASSWORD = "12345"
+
+
 def get_database_connection():
     return mysql.connector.connect(
         host=os.getenv("MYSQL_HOST", "mysql"),
@@ -15,6 +19,36 @@ def get_database_connection():
     )
 
 
+def create_user(
+    cursor,
+    connection,
+    username: str,
+    password: str,
+):
+    password_hash = bcrypt.hashpw(
+        password.encode("utf-8"),
+        bcrypt.gensalt(),
+    ).decode("utf-8")
+
+    cursor.execute(
+        """
+        INSERT INTO users (
+            username,
+            password_hash,
+            role
+        )
+        VALUES (%s, %s, %s)
+        """,
+        (
+            username,
+            password_hash,
+            "admin",
+        ),
+    )
+
+    connection.commit()
+
+
 def main():
     print()
     print("===================================")
@@ -22,31 +56,82 @@ def main():
     print("===================================")
     print()
 
-    username = input("Nombre de usuario: ").strip()
-
-    if not username:
-        print("Error: el nombre de usuario no puede estar vacío.")
-        return
-
-    password = getpass.getpass("Contraseña: ")
-    password_confirmation = getpass.getpass(
-        "Repetir contraseña: "
-    )
-
-    if not password:
-        print("Error: la contraseña no puede estar vacía.")
-        return
-
-    if password != password_confirmation:
-        print("Error: las contraseñas no coinciden.")
-        return
-
     connection = None
     cursor = None
 
     try:
         connection = get_database_connection()
         cursor = connection.cursor()
+
+        # Comprobar si ya existen usuarios
+        cursor.execute(
+            """
+            SELECT COUNT(*)
+            FROM users
+            """
+        )
+
+        user_count = cursor.fetchone()[0]
+
+        # Primer usuario del sistema
+        if user_count == 0:
+            print("No existen usuarios registrados.")
+            print()
+            print("Creando usuario administrador inicial...")
+            print()
+
+            create_user(
+                cursor,
+                connection,
+                DEFAULT_USERNAME,
+                DEFAULT_PASSWORD,
+            )
+
+            print(
+                f"Usuario '{DEFAULT_USERNAME}' creado correctamente."
+            )
+            print("Rol: admin")
+            print()
+            print("Credenciales de acceso inicial:")
+            print(f"Usuario: {DEFAULT_USERNAME}")
+            print(f"Contraseña: {DEFAULT_PASSWORD}")
+            print()
+
+            return
+
+        # Modo normal para crear usuarios adicionales
+        username = input(
+            "Nombre de usuario: "
+        ).strip()
+
+        if not username:
+            print(
+                "Error: el nombre de usuario "
+                "no puede estar vacío."
+            )
+            return
+
+        password = getpass.getpass(
+            "Contraseña: "
+        )
+
+        password_confirmation = getpass.getpass(
+            "Repetir contraseña: "
+        )
+
+        if not password:
+            print(
+                "Error: la contraseña "
+                "no puede estar vacía."
+            )
+            return
+
+        if password != password_confirmation:
+            print(
+                "Error: las contraseñas "
+                "no coinciden."
+            )
+            return
 
         cursor.execute(
             """
@@ -63,32 +148,17 @@ def main():
         if existing_user is not None:
             print()
             print(
-                f"Error: el usuario '{username}' ya existe."
+                f"Error: el usuario '{username}' "
+                "ya existe."
             )
             return
 
-        password_hash = bcrypt.hashpw(
-            password.encode("utf-8"),
-            bcrypt.gensalt(),
-        ).decode("utf-8")
-
-        cursor.execute(
-            """
-            INSERT INTO users (
-                username,
-                password_hash,
-                role
-            )
-            VALUES (%s, %s, %s)
-            """,
-            (
-                username,
-                password_hash,
-                "admin",
-            ),
+        create_user(
+            cursor,
+            connection,
+            username,
+            password,
         )
-
-        connection.commit()
 
         print()
         print(

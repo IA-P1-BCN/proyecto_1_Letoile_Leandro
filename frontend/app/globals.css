@@ -1913,3 +1913,419 @@ body {
     padding: 12px 20px;
   }
 }
+
+/* =========================================================
+   3D SCENE LOADING
+   ========================================================= */
+
+.scene-loading {
+  position: fixed;
+  inset: 0;
+
+  z-index: 500;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  overflow: hidden;
+
+  background:
+    radial-gradient(
+      circle at 50% 45%,
+      rgba(24, 54, 88, 0.24),
+      transparent 42%
+    ),
+    #030914;
+
+  animation: scene-loading-enter 0.35s ease-out;
+}
+
+.scene-loading-grid {
+  position: absolute;
+  inset: 0;
+
+  opacity: 0.35;
+
+  background-image:
+    linear-gradient(
+      rgba(56, 189, 248, 0.035) 1px,
+      transparent 1px
+    ),
+    linear-gradient(
+      90deg,
+      rgba(56, 189, 248, 0.035) 1px,
+      transparent 1px
+    );
+
+  background-size: 48px 48px;
+
+  mask-image:
+    radial-gradient(
+      ellipse at center,
+      black 20%,
+      transparent 78%
+    );
+
+  animation:
+    scene-loading-grid-move 12s linear infinite;
+}
+
+.scene-loading-glow {
+  position: absolute;
+
+  width: 420px;
+  height: 420px;
+
+  border-radius: 50%;
+
+  filter: blur(90px);
+
+  pointer-events: none;
+}
+
+.scene-loading-glow-one {
+  top: 15%;
+  left: 15%;
+
+  background:
+    rgba(14, 165, 233, 0.06);
+}
+
+.scene-loading-glow-two {
+  right: 10%;
+  bottom: 5%;
+
+  background:
+    rgba(59, 130, 246, 0.05);
+}
+
+.scene-loading-content {
+  position: relative;
+  z-index: 2;
+
+  width: min(440px, calc(100% - 40px));
+
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+
+  text-align: center;
+}
+
+.scene-loading-brand {
+  display: flex;
+  align-items: center;
+
+  gap: 12px;
+
+  margin-bottom: 34px;
+}
+
+.scene-loading-mark {
+  width: 42px;
+  height: 42px;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+
+  border:
+    1px solid rgba(56, 189, 248, 0.28);
+
+  border-radius: 10px;
+
+  background:
+    rgba(56, 189, 248, 0.07);
+
+  color: #38bdf8;
+
+  font-size: 13px;
+  font-weight: 900;
+  letter-spacing: 1px;
+
+  box-shadow:
+    0 0 25px rgba(56, 189, 248, 0.08);
+}
+
+.scene-loading-name {
+  color: #ffffff;
+
+  font-size: 17px;
+  font-weight: 800;
+
+  letter-spacing: 0.2px;
+
+  text-align: left;
+}
+
+.scene-loading-subtitle {
+  margin-top: 2px;
+
+  color: rgba(255, 255, 255, 0.32);
+
+  font-size: 8px;
+  font-weight: 700;
+
+  letter-spacing: 2.8px;
+
+  text-align: left;
+  text-transform: uppercase;
+}
+
+.scene-loading-divider {
+  width: 44px;
+  height: 1px;
+
+  margin-bottom: 28px;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      #38bdf8,
+      transparent
+    );
+
+  box-shadow:
+    0 0 12px rgba(56, 189, 248, 0.5);
+}
+
+.scene-loading-label {
+  margin-bottom: 12px;
+
+  color: #38bdf8;
+
+  font-size: 9px;
+  font-weight: 800;
+
+  letter-spacing: 2.5px;
+}
+
+.scene-loading-title {
+  margin: 0;
+
+  color: #ffffff;
+
+  font-size: clamp(28px, 5vw, 38px);
+  font-weight: 800;
+
+  letter-spacing: -1px;
+}
+
+.scene-loading-title span {
+  color: #38bdf8;
+
+  text-shadow:
+    0 0 25px rgba(56, 189, 248, 0.2);
+}
+
+.scene-loading-description {
+  max-width: 340px;
+
+  margin: 12px 0 30px;
+
+  color: rgba(255, 255, 255, 0.4);
+
+  font-size: 12px;
+  line-height: 1.7;
+}
+
+.scene-loading-loader {
+  width: min(320px, 100%);
+}
+
+.scene-loading-loader-track {
+  width: 100%;
+  height: 3px;
+
+  overflow: hidden;
+
+  border-radius: 999px;
+
+  background:
+    rgba(255, 255, 255, 0.07);
+}
+
+.scene-loading-loader-bar {
+  width: 38%;
+  height: 100%;
+
+  border-radius: inherit;
+
+  background:
+    linear-gradient(
+      90deg,
+      transparent,
+      #38bdf8,
+      #60a5fa
+    );
+
+  box-shadow:
+    0 0 14px rgba(56, 189, 248, 0.65);
+
+  animation:
+    scene-loading-progress 1.35s
+    ease-in-out infinite;
+}
+
+.scene-loading-loader-info {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+
+  margin-top: 9px;
+
+  color: rgba(255, 255, 255, 0.25);
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+}
+
+.scene-loading-dots {
+  display: flex;
+  gap: 4px;
+}
+
+.scene-loading-dots i {
+  width: 3px;
+  height: 3px;
+
+  border-radius: 50%;
+
+  background: #38bdf8;
+
+  opacity: 0.25;
+
+  animation:
+    scene-loading-dot 1.2s
+    ease-in-out infinite;
+}
+
+.scene-loading-dots i:nth-child(2) {
+  animation-delay: 0.15s;
+}
+
+.scene-loading-dots i:nth-child(3) {
+  animation-delay: 0.3s;
+}
+
+.scene-loading-status {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+
+  margin-top: 38px;
+
+  color: rgba(255, 255, 255, 0.22);
+
+  font-size: 8px;
+  font-weight: 800;
+
+  letter-spacing: 1.5px;
+}
+
+.scene-loading-status-dot {
+  width: 6px;
+  height: 6px;
+
+  border-radius: 50%;
+
+  background: #22c55e;
+
+  box-shadow:
+    0 0 9px rgba(34, 197, 94, 0.75);
+
+  animation:
+    scene-loading-status-pulse 1.5s
+    ease-in-out infinite;
+}
+
+.user-menu-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.user-menu-visible {
+  opacity: 1;
+  pointer-events: auto;
+
+  transition:
+    opacity 0.35s ease 0.15s;
+}
+
+@keyframes scene-loading-enter {
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
+}
+
+@keyframes scene-loading-grid-move {
+  from {
+    transform: translateY(0);
+  }
+
+  to {
+    transform: translateY(48px);
+  }
+}
+
+@keyframes scene-loading-progress {
+  0% {
+    transform: translateX(-130%);
+  }
+
+  100% {
+    transform: translateX(360%);
+  }
+}
+
+@keyframes scene-loading-dot {
+  0%,
+  100% {
+    opacity: 0.2;
+    transform: scale(0.8);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1.2);
+  }
+}
+
+@keyframes scene-loading-status-pulse {
+  0%,
+  100% {
+    opacity: 0.45;
+    transform: scale(0.85);
+  }
+
+  50% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@media (max-width: 600px) {
+  .scene-loading-brand {
+    margin-bottom: 26px;
+  }
+
+  .scene-loading-title {
+    font-size: 30px;
+  }
+
+  .scene-loading-description {
+    font-size: 11px;
+  }
+
+  .scene-loading-status {
+    margin-top: 30px;
+  }
+}

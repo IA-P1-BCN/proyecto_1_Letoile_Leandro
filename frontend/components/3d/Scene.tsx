@@ -1,7 +1,8 @@
 "use client";
 
 import { Canvas } from "@react-three/fiber";
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
+import { useProgress } from "@react-three/drei";
 import * as THREE from "three";
 
 import Taxi from "./Taxi";
@@ -23,14 +24,57 @@ type TaxiStatus =
 
 type SceneProps = {
   historyOpen: boolean;
-  onHistoryOpenChange: (
-    open: boolean
-  ) => void;
+  onHistoryOpenChange: (open: boolean) => void;
+  onReady?: () => void;
 };
+
+function SceneReady({
+  onReady,
+}: {
+  onReady?: () => void;
+}) {
+  const { progress, active } = useProgress();
+  const minimumDelayRef = useRef(false);
+  const readyRef = useRef(false);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => {
+      minimumDelayRef.current = true;
+
+      if (
+        !readyRef.current &&
+        progress >= 100 &&
+        !active
+      ) {
+        readyRef.current = true;
+        onReady?.();
+      }
+    }, 800);
+
+    return () => {
+      window.clearTimeout(timer);
+    };
+  }, [onReady, progress, active]);
+
+  useEffect(() => {
+    if (
+      !readyRef.current &&
+      minimumDelayRef.current &&
+      progress >= 100 &&
+      !active
+    ) {
+      readyRef.current = true;
+      onReady?.();
+    }
+  }, [progress, active, onReady]);
+
+  return null;
+}
 
 export default function Scene({
   historyOpen,
   onHistoryOpenChange,
+  onReady,
 }: SceneProps) {
   const taxiRef = useRef<THREE.Group>(null);
 
@@ -94,6 +138,8 @@ export default function Scene({
           intensity={1.4}
         />
 
+        <SceneReady onReady={onReady} />
+
         <World />
 
         <StartInstructions visible={true} />
@@ -126,7 +172,7 @@ export default function Scene({
 
       {/* =====================================================
           TAXÍMETRO
-      ===================================================== */}
+          ===================================================== */}
 
       <Taximeter
         amount={amount}
@@ -135,7 +181,7 @@ export default function Scene({
 
       {/* =====================================================
           HISTORIAL
-      ===================================================== */}
+          ===================================================== */}
 
       <RideHistory
         open={historyOpen}
