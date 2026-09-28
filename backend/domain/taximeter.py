@@ -3,7 +3,9 @@ from backend.domain.ride_record import RideRecord
 from backend.domain.state import TaxiState
 from backend.infrastructure.config.tariff_config import TariffConfig
 from backend.infrastructure.logging.logger import TaximeterLogger
-from backend.infrastructure.persistence.ride_repository import RideRepository
+from backend.infrastructure.persistence.mysql_ride_repository import (
+    MySQLRideRepository,
+)
 
 
 class Taximeter:
@@ -21,7 +23,7 @@ class Taximeter:
         )
 
         self.ride_repository = (
-            ride_repository or RideRepository()
+            ride_repository or MySQLRideRepository()
         )
 
         self.logger = (
@@ -172,8 +174,10 @@ class Taximeter:
 
         total = stopped_cost + moving_cost
 
+        ride_id = self._get_next_ride_id()
+
         ride_record = RideRecord(
-            ride_id=self._get_next_ride_id(),
+            ride_id=ride_id,
             started_at=times["started_at"],
             finished_at=times["finished_at"],
             stopped_time=times["stopped_time"],
@@ -183,9 +187,12 @@ class Taximeter:
             total=total,
         )
 
-        self.ride_repository.save(
+        generated_id = self.ride_repository.save(
             ride_record
         )
+
+        if generated_id is not None:
+            ride_record.ride_id = generated_id
 
         result = {
             "ride_id": ride_record.ride_id,
