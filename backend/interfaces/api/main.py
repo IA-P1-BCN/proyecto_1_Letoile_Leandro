@@ -1,11 +1,20 @@
 import os
 
-from fastapi import FastAPI, HTTPException, Request
+from fastapi import (
+    Depends,
+    FastAPI,
+    HTTPException,
+    Request,
+)
+
 from fastapi.middleware.cors import CORSMiddleware
+
 from pydantic import BaseModel
+
 from starlette.middleware.sessions import SessionMiddleware
 
 from backend.application.auth_service import AuthService
+
 from backend.application.taximeter_service import TaximeterService
 
 
@@ -99,6 +108,7 @@ app.add_middleware(
 
 
 service = TaximeterService()
+
 auth_service = AuthService()
 
 
@@ -186,10 +196,8 @@ def get_current_session(request: Request):
     response_model=TaximeterStateResponse
 )
 def get_taximeter_state(
-    request: Request
+    current_user: dict = Depends(get_current_user)
 ):
-    get_current_user(request)
-
     return {
         "state": service.get_state()
     }
@@ -200,10 +208,8 @@ def get_taximeter_state(
     response_model=TaximeterCurrentResponse
 )
 def get_taximeter_current(
-    request: Request
+    current_user: dict = Depends(get_current_user)
 ):
-    get_current_user(request)
-
     return service.get_current()
 
 
@@ -212,10 +218,8 @@ def get_taximeter_current(
     response_model=ActionResponse
 )
 def start_ride(
-    request: Request
+    current_user: dict = Depends(get_current_user)
 ):
-    get_current_user(request)
-
     result = service.start_ride()
 
     if not result["success"]:
@@ -232,10 +236,8 @@ def start_ride(
     response_model=ActionResponse
 )
 def move_ride(
-    request: Request
+    current_user: dict = Depends(get_current_user)
 ):
-    get_current_user(request)
-
     result = service.move_ride()
 
     if not result["success"]:
@@ -252,10 +254,8 @@ def move_ride(
     response_model=ActionResponse
 )
 def stop_ride(
-    request: Request
+    current_user: dict = Depends(get_current_user)
 ):
-    get_current_user(request)
-
     result = service.stop_ride()
 
     if not result["success"]:
@@ -272,10 +272,8 @@ def stop_ride(
     response_model=RideFinishResponse
 )
 def finish_ride(
-    request: Request
+    current_user: dict = Depends(get_current_user)
 ):
-    get_current_user(request)
-
     result = service.finish_ride()
 
     if not result["success"]:
@@ -292,8 +290,6 @@ def finish_ride(
     response_model=list[RideResponse]
 )
 def get_rides_history(
-    request: Request
+    current_user: dict = Depends(get_current_user)
 ):
-    get_current_user(request)
-
     return service.get_history()

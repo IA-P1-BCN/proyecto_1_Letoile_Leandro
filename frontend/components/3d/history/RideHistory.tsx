@@ -1,21 +1,33 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo } from "react";
 
 import useRideHistory from "../../../hooks/useRideHistory";
 
 import RideHistoryItem from "./RideHistoryItem";
 import HistorySummary from "./HistorySummary";
 
-export default function RideHistory() {
-  const [open, setOpen] = useState(false);
+type RideHistoryProps = {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+};
 
+export default function RideHistory({
+  open,
+  onOpenChange,
+}: RideHistoryProps) {
   const {
     rides,
     loading,
     error,
     refreshHistory,
   } = useRideHistory();
+
+  useEffect(() => {
+    if (open) {
+      refreshHistory();
+    }
+  }, [open, refreshHistory]);
 
   const totalAmount = useMemo(() => {
     return rides.reduce(
@@ -24,27 +36,9 @@ export default function RideHistory() {
     );
   }, [rides]);
 
-  function handleOpen() {
-    setOpen(true);
-    refreshHistory();
-  }
-
   function handleClose() {
-    setOpen(false);
+    onOpenChange(false);
   }
-
-  // =====================================================
-  // ORDEN DEL HISTORIAL
-  // =====================================================
-  // Mostramos las carreras de menor a mayor ID:
-  //
-  // #1
-  // #2
-  // #3
-  // #4
-  //
-  // No modificamos el array original de rides.
-  // =====================================================
 
   const sortedRides = useMemo(() => {
     return [...rides].sort(
@@ -54,37 +48,6 @@ export default function RideHistory() {
 
   return (
     <>
-      {/* =====================================================
-          BOTÓN HISTORIAL
-      ===================================================== */}
-
-      <button
-        type="button"
-        onClick={handleOpen}
-        style={{
-          position: "fixed",
-          right: "24px",
-          bottom: "24px",
-          zIndex: 100,
-          padding: "12px 20px",
-          border:
-            "1px solid rgba(255,255,255,0.15)",
-          borderRadius: "10px",
-          background: "rgba(7,17,31,0.92)",
-          color: "#ffffff",
-          fontSize: "14px",
-          fontWeight: 700,
-          cursor: "pointer",
-          backdropFilter: "blur(10px)",
-        }}
-      >
-        HISTORIAL
-      </button>
-
-      {/* =====================================================
-          MODAL
-      ===================================================== */}
-
       {open && (
         <div
           style={{
@@ -99,10 +62,6 @@ export default function RideHistory() {
           }}
           onClick={handleClose}
         >
-          {/* =================================================
-              CONTENEDOR
-          ================================================= */}
-
           <div
             style={{
               width: "min(720px, 100%)",
@@ -119,10 +78,6 @@ export default function RideHistory() {
               event.stopPropagation();
             }}
           >
-            {/* ===============================================
-                HEADER
-            =============================================== */}
-
             <div
               style={{
                 display: "flex",
@@ -150,10 +105,6 @@ export default function RideHistory() {
                 />
               </div>
 
-              {/* =============================================
-                  CERRAR
-              ============================================= */}
-
               <button
                 type="button"
                 onClick={handleClose}
@@ -175,10 +126,6 @@ export default function RideHistory() {
               </button>
             </div>
 
-            {/* ===============================================
-                CONTENIDO
-            =============================================== */}
-
             <div
               style={{
                 maxHeight:
@@ -187,10 +134,6 @@ export default function RideHistory() {
                 padding: "0 24px 20px",
               }}
             >
-              {/* =============================================
-                  LOADING
-              ============================================= */}
-
               {loading && (
                 <div
                   style={{
@@ -203,10 +146,6 @@ export default function RideHistory() {
                 </div>
               )}
 
-              {/* =============================================
-                  ERROR
-              ============================================= */}
-
               {error && !loading && (
                 <div
                   style={{
@@ -218,10 +157,6 @@ export default function RideHistory() {
                   {error}
                 </div>
               )}
-
-              {/* =============================================
-                  SIN CARRERAS
-              ============================================= */}
 
               {!loading &&
                 !error &&
@@ -238,18 +173,10 @@ export default function RideHistory() {
                   </div>
                 )}
 
-              {/* =============================================
-                  LISTADO
-              ============================================= */}
-
               {!loading &&
                 !error &&
                 sortedRides.length > 0 && (
                   <div>
-                    {/* ---------------------------------------
-                        CABECERA DE COLUMNAS
-                    --------------------------------------- */}
-
                     <div
                       style={{
                         display: "grid",
@@ -266,11 +193,8 @@ export default function RideHistory() {
                       }}
                     >
                       <span>#</span>
-
                       <span>Fecha</span>
-
                       <span>Duración</span>
-
                       <span
                         style={{
                           textAlign: "right",
@@ -279,10 +203,6 @@ export default function RideHistory() {
                         Total
                       </span>
                     </div>
-
-                    {/* ---------------------------------------
-                        CARRERAS ORDENADAS
-                    --------------------------------------- */}
 
                     {sortedRides.map((ride) => (
                       <RideHistoryItem

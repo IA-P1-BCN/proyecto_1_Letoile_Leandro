@@ -21,7 +21,17 @@ type TaxiStatus =
   | "stopped"
   | "finished";
 
-export default function Scene() {
+type SceneProps = {
+  historyOpen: boolean;
+  onHistoryOpenChange: (
+    open: boolean
+  ) => void;
+};
+
+export default function Scene({
+  historyOpen,
+  onHistoryOpenChange,
+}: SceneProps) {
   const taxiRef = useRef<THREE.Group>(null);
 
   const {
@@ -127,7 +137,10 @@ export default function Scene() {
           HISTORIAL
       ===================================================== */}
 
-      <RideHistory />
+      <RideHistory
+        open={historyOpen}
+        onOpenChange={onHistoryOpenChange}
+      />
     </>
   );
 }

@@ -1,4 +1,4 @@
-const API_URL = "http://127.0.0.1:8000";
+const API_URL = "http://localhost:8000";
 
 export type TaximeterState = {
   state: "idle" | "stopped" | "moving" | "finished";
@@ -47,6 +47,9 @@ async function request<T>(
 ): Promise<T> {
   const response = await fetch(`${API_URL}${endpoint}`, {
     ...options,
+
+    credentials: "include",
+
     headers: {
       "Content-Type": "application/json",
       ...options?.headers,

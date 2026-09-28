@@ -1,14 +1,23 @@
 import tempfile
+
 import unittest
+
 from pathlib import Path
 
 from fastapi.testclient import TestClient
 
 from backend.application.taximeter_service import TaximeterService
+
 from backend.domain.taximeter import Taximeter
+
 from backend.infrastructure.logging.logger import TaximeterLogger
+
 from backend.infrastructure.persistence.ride_repository import RideRepository
-from backend.interfaces.api.main import app
+
+from backend.interfaces.api.main import (
+    app,
+    get_current_user,
+)
 
 
 class TestTaximeterAPI(unittest.TestCase):
@@ -38,15 +47,27 @@ class TestTaximeterAPI(unittest.TestCase):
         import backend.interfaces.api.main as api_main
 
         self.api_main = api_main
+
         self.original_service = api_main.service
 
         api_main.service = self.service
 
+        app.dependency_overrides[
+            get_current_user
+        ] = lambda: {
+            "user_id": 1,
+            "username": "test_user",
+            "role": "operator",
+        }
+
         self.client = TestClient(app)
+
         self.logger = logger
 
     def tearDown(self):
         self.api_main.service = self.original_service
+
+        app.dependency_overrides.clear()
 
         for handler in self.logger.logger.handlers[:]:
             handler.close()

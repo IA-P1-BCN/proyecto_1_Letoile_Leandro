@@ -1,9 +1,5 @@
-import Scene from "@/components/3d/Scene";
+import AuthGate from "@/components/auth/AuthGate";
 
 export default function Home() {
-  return (
-    <main className="app">
-      <Scene />
-    </main>
-  );
+  return <AuthGate />;
 }
