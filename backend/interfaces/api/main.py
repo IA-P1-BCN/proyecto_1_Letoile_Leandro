@@ -1,8 +1,29 @@
-from fastapi import FastAPI, HTTPException
+import os
+
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
+from starlette.middleware.sessions import SessionMiddleware
 
+from backend.application.auth_service import AuthService
 from backend.application.taximeter_service import TaximeterService
+
+
+class LoginRequest(BaseModel):
+    username: str
+    password: str
+
+
+class LoginResponse(BaseModel):
+    success: bool
+    username: str
+    role: str
+
+
+class UserResponse(BaseModel):
+    authenticated: bool
+    username: str | None = None
+    role: str | None = None
 
 
 class TaximeterStateResponse(BaseModel):
@@ -52,9 +73,18 @@ app = FastAPI(
 )
 
 
-# =====================================================
-# CORS
-# =====================================================
+app.add_middleware(
+    SessionMiddleware,
+    secret_key=os.getenv(
+        "SESSION_SECRET",
+        "taxitech-dev-secret-change-me"
+    ),
+    session_cookie="taxitech_session",
+    max_age=60 * 60 * 8,
+    same_site="lax",
+    https_only=False,
+)
+
 
 app.add_middleware(
     CORSMiddleware,
@@ -69,17 +99,97 @@ app.add_middleware(
 
 
 service = TaximeterService()
+auth_service = AuthService()
 
 
-# =====================================================
-# TAXIMETER
-# =====================================================
+def get_current_user(request: Request):
+    user_id = request.session.get("user_id")
+
+    if user_id is None:
+        raise HTTPException(
+            status_code=401,
+            detail="No autenticado"
+        )
+
+    return {
+        "user_id": user_id,
+        "username": request.session.get("username"),
+        "role": request.session.get("role"),
+    }
+
+
+@app.post(
+    "/api/auth/login",
+    response_model=LoginResponse
+)
+def login(
+    credentials: LoginRequest,
+    request: Request,
+):
+    user = auth_service.authenticate(
+        credentials.username,
+        credentials.password,
+    )
+
+    if user is None:
+        raise HTTPException(
+            status_code=401,
+            detail="Usuario o contraseña incorrectos"
+        )
+
+    request.session["user_id"] = user.user_id
+    request.session["username"] = user.username
+    request.session["role"] = user.role
+
+    return {
+        "success": True,
+        "username": user.username,
+        "role": user.role,
+    }
+
+
+@app.post(
+    "/api/auth/logout"
+)
+def logout(request: Request):
+    request.session.clear()
+
+    return {
+        "success": True,
+        "message": "Sesión cerrada"
+    }
+
+
+@app.get(
+    "/api/auth/me",
+    response_model=UserResponse
+)
+def get_current_session(request: Request):
+    user_id = request.session.get("user_id")
+
+    if user_id is None:
+        return {
+            "authenticated": False,
+            "username": None,
+            "role": None,
+        }
+
+    return {
+        "authenticated": True,
+        "username": request.session.get("username"),
+        "role": request.session.get("role"),
+    }
+
 
 @app.get(
     "/api/taximeter/state",
     response_model=TaximeterStateResponse
 )
-def get_taximeter_state():
+def get_taximeter_state(
+    request: Request
+):
+    get_current_user(request)
+
     return {
         "state": service.get_state()
     }
@@ -89,19 +199,23 @@ def get_taximeter_state():
     "/api/taximeter/current",
     response_model=TaximeterCurrentResponse
 )
-def get_taximeter_current():
+def get_taximeter_current(
+    request: Request
+):
+    get_current_user(request)
+
     return service.get_current()
 
-
-# =====================================================
-# RIDES
-# =====================================================
 
 @app.post(
     "/api/rides/start",
     response_model=ActionResponse
 )
-def start_ride():
+def start_ride(
+    request: Request
+):
+    get_current_user(request)
+
     result = service.start_ride()
 
     if not result["success"]:
@@ -117,7 +231,11 @@ def start_ride():
     "/api/rides/move",
     response_model=ActionResponse
 )
-def move_ride():
+def move_ride(
+    request: Request
+):
+    get_current_user(request)
+
     result = service.move_ride()
 
     if not result["success"]:
@@ -133,7 +251,11 @@ def move_ride():
     "/api/rides/stop",
     response_model=ActionResponse
 )
-def stop_ride():
+def stop_ride(
+    request: Request
+):
+    get_current_user(request)
+
     result = service.stop_ride()
 
     if not result["success"]:
@@ -149,7 +271,11 @@ def stop_ride():
     "/api/rides/finish",
     response_model=RideFinishResponse
 )
-def finish_ride():
+def finish_ride(
+    request: Request
+):
+    get_current_user(request)
+
     result = service.finish_ride()
 
     if not result["success"]:
@@ -161,13 +287,13 @@ def finish_ride():
     return result
 
 
-# =====================================================
-# HISTORY
-# =====================================================
-
 @app.get(
     "/api/rides/history",
     response_model=list[RideResponse]
 )
-def get_rides_history():
+def get_rides_history(
+    request: Request
+):
+    get_current_user(request)
+
     return service.get_history()
