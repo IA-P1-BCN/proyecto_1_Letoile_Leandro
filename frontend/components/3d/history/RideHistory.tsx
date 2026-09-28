@@ -3,7 +3,6 @@
 import { useEffect, useMemo } from "react";
 
 import useRideHistory from "../../../hooks/useRideHistory";
-
 import RideHistoryItem from "./RideHistoryItem";
 import HistorySummary from "./HistorySummary";
 
@@ -42,7 +41,7 @@ export default function RideHistory({
 
   const sortedRides = useMemo(() => {
     return [...rides].sort(
-      (a, b) => a.ride_id - b.ride_id
+      (a, b) => b.ride_id - a.ride_id
     );
   }, [rides]);
 
@@ -50,168 +49,127 @@ export default function RideHistory({
     <>
       {open && (
         <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            zIndex: 200,
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            padding: "24px",
-            background: "rgba(0,0,0,0.65)",
-          }}
+          className="ride-history-overlay"
           onClick={handleClose}
         >
           <div
-            style={{
-              width: "min(720px, 100%)",
-              maxHeight: "80vh",
-              overflow: "hidden",
-              borderRadius: "16px",
-              border:
-                "1px solid rgba(255,255,255,0.12)",
-              background: "#07111f",
-              boxShadow:
-                "0 25px 80px rgba(0,0,0,0.5)",
-            }}
+            className="ride-history-modal"
             onClick={(event) => {
               event.stopPropagation();
             }}
           >
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "space-between",
-                padding: "20px 24px",
-                borderBottom:
-                  "1px solid rgba(255,255,255,0.08)",
-              }}
-            >
+            <div className="ride-history-header">
               <div>
-                <h2
-                  style={{
-                    margin: 0,
-                    color: "#ffffff",
-                    fontSize: "20px",
-                  }}
-                >
+                <div className="ride-history-eyebrow">
+                  TTX-247 · RIDE LOG
+                </div>
+
+                <h2 className="ride-history-title">
                   Historial de carreras
                 </h2>
 
-                <HistorySummary
-                  rideCount={rides.length}
-                  totalAmount={totalAmount}
-                />
+                <p className="ride-history-subtitle">
+                  Registro de operaciones del sistema
+                </p>
               </div>
 
               <button
                 type="button"
                 onClick={handleClose}
                 aria-label="Cerrar historial"
-                style={{
-                  width: "36px",
-                  height: "36px",
-                  border: "none",
-                  borderRadius: "8px",
-                  background:
-                    "rgba(255,255,255,0.05)",
-                  color: "#8da2b8",
-                  fontSize: "24px",
-                  cursor: "pointer",
-                  lineHeight: 1,
-                }}
+                className="ride-history-close"
               >
                 ×
               </button>
             </div>
 
-            <div
-              style={{
-                maxHeight:
-                  "calc(80vh - 100px)",
-                overflowY: "auto",
-                padding: "0 24px 20px",
-              }}
-            >
+            <div className="ride-history-summary">
+              <HistorySummary
+                rideCount={rides.length}
+                totalAmount={totalAmount}
+              />
+            </div>
+
+            <div className="ride-history-content">
               {loading && (
-                <div
-                  style={{
-                    padding: "40px 0",
-                    color: "#8da2b8",
-                    textAlign: "center",
-                  }}
-                >
-                  Cargando historial...
+                <div className="ride-history-state">
+                  <span className="ride-history-loader" />
+
+                  <span>
+                    Cargando historial...
+                  </span>
                 </div>
               )}
 
               {error && !loading && (
-                <div
-                  style={{
-                    padding: "40px 0",
-                    color: "#ff8a8a",
-                    textAlign: "center",
-                  }}
-                >
-                  {error}
+                <div className="ride-history-state ride-history-state-error">
+                  <span className="ride-history-state-icon">
+                    !
+                  </span>
+
+                  <div>
+                    <strong>
+                      Error al cargar el historial
+                    </strong>
+
+                    <span>{error}</span>
+                  </div>
                 </div>
               )}
 
               {!loading &&
                 !error &&
                 rides.length === 0 && (
-                  <div
-                    style={{
-                      padding: "40px 0",
-                      color: "#8da2b8",
-                      textAlign: "center",
-                    }}
-                  >
-                    Todavía no hay carreras
-                    registradas.
+                  <div className="ride-history-state">
+                    <span className="ride-history-empty-icon">
+                      ◫
+                    </span>
+
+                    <div>
+                      <strong>
+                        Sin registros
+                      </strong>
+
+                      <span>
+                        Todavía no hay carreras
+                        registradas.
+                      </span>
+                    </div>
                   </div>
                 )}
 
               {!loading &&
                 !error &&
                 sortedRides.length > 0 && (
-                  <div>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "50px minmax(180px, 1fr) 100px 100px",
-                        gap: "12px",
-                        padding:
-                          "16px 0 10px",
-                        color: "#60758b",
-                        fontSize: "11px",
-                        fontWeight: 700,
-                        textTransform:
-                          "uppercase",
-                      }}
-                    >
-                      <span>#</span>
-                      <span>Fecha</span>
+                  <div className="ride-history-table">
+                    <div className="ride-history-table-header">
+                      <span>ID</span>
+                      <span>Fecha y hora</span>
                       <span>Duración</span>
-                      <span
-                        style={{
-                          textAlign: "right",
-                        }}
-                      >
-                        Total
-                      </span>
+                      <span>Total</span>
                     </div>
 
-                    {sortedRides.map((ride) => (
-                      <RideHistoryItem
-                        key={ride.ride_id}
-                        ride={ride}
-                      />
-                    ))}
+                    <div className="ride-history-list">
+                      {sortedRides.map((ride) => (
+                        <RideHistoryItem
+                          key={ride.ride_id}
+                          ride={ride}
+                        />
+                      ))}
+                    </div>
                   </div>
                 )}
+            </div>
+
+            <div className="ride-history-footer">
+              <div className="ride-history-footer-status">
+                <span />
+                SISTEMA OPERATIVO
+              </div>
+
+              <span>
+                TAXITECH SOLUTIONS · TTX-247
+              </span>
             </div>
           </div>
         </div>

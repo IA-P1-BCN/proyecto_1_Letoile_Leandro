@@ -99,6 +99,9 @@ export default function AuthGate() {
     return <LoginForm />;
   }
 
+  const username = user?.username ?? "Usuario";
+  const role = user?.role ?? "operator";
+
   return (
     <>
       <main className="app">
@@ -120,8 +123,19 @@ export default function AuthGate() {
           aria-label="Abrir menú de usuario"
           aria-expanded={userMenuOpen}
         >
-          <span className="user-menu-icon">
-            👤
+          <span className="user-menu-avatar">
+            {username.charAt(0).toUpperCase()}
+          </span>
+
+          <span className="user-menu-info">
+            <span className="user-menu-name">
+              {username}
+            </span>
+
+            <span className="user-menu-status">
+              <span className="user-menu-status-dot" />
+              SESSION ACTIVE
+            </span>
           </span>
 
           <span className="user-menu-arrow">
@@ -132,18 +146,35 @@ export default function AuthGate() {
         {userMenuOpen && (
           <div className="user-menu">
             <div className="user-menu-header">
-              <span className="user-menu-user-icon">
-                👤
-              </span>
+              <div className="user-menu-avatar-large">
+                {username.charAt(0).toUpperCase()}
+              </div>
 
-              <div>
+              <div className="user-menu-profile">
                 <div className="user-menu-username">
-                  {user?.username}
+                  {username}
                 </div>
 
                 <div className="user-menu-role">
-                  Usuario
+                  {role.toUpperCase()}
                 </div>
+              </div>
+
+              <div className="user-menu-active">
+                <span />
+                ACTIVE
+              </div>
+            </div>
+
+            <div className="user-menu-system">
+              <div>
+                <span>SYSTEM</span>
+                <strong>TTX-247</strong>
+              </div>
+
+              <div>
+                <span>ACCESS</span>
+                <strong>{role.toUpperCase()}</strong>
               </div>
             </div>
 
@@ -152,24 +183,47 @@ export default function AuthGate() {
               className="user-menu-item"
               onClick={handleOpenHistory}
             >
-              <span>📋</span>
-              <span>Historial</span>
+              <span className="user-menu-item-icon">
+                ◫
+              </span>
+
+              <span>
+                <strong>Historial</strong>
+                <small>
+                  Consultar carreras registradas
+                </small>
+              </span>
+
+              <b>→</b>
             </button>
 
             <button
               type="button"
-              className="user-menu-item logout"
+              className="user-menu-item user-menu-logout"
               onClick={handleLogout}
               disabled={loggingOut}
             >
-              <span>🚪</span>
+              <span className="user-menu-item-icon">
+                ⇥
+              </span>
 
               <span>
-                {loggingOut
-                  ? "Cerrando sesión..."
-                  : "Cerrar sesión"}
+                <strong>
+                  {loggingOut
+                    ? "Cerrando sesión..."
+                    : "Cerrar sesión"}
+                </strong>
+
+                <small>
+                  Finalizar sesión actual
+                </small>
               </span>
             </button>
+
+            <div className="user-menu-footer">
+              <span>TAXITECH SOLUTIONS</span>
+              <span>SECURE SESSION</span>
+            </div>
           </div>
         )}
       </div>

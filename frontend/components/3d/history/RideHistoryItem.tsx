@@ -39,72 +39,45 @@ function formatDuration(
 }
 
 function formatAmount(amount: number): string {
-  return `${amount.toFixed(2)} €`;
+  return `${amount.toFixed(2).replace(".", ",")} €`;
 }
 
 export default function RideHistoryItem({
   ride,
 }: RideHistoryItemProps) {
   return (
-    <div
-      style={{
-        display: "grid",
-        gridTemplateColumns:
-          "50px minmax(180px, 1fr) 100px 100px",
-        gap: "12px",
-        alignItems: "center",
-        padding: "14px 0",
-        borderBottom:
-          "1px solid rgba(255,255,255,0.08)",
-      }}
-    >
-      {/* ID */}
-      <span
-        style={{
-          color: "#8da2b8",
-          fontSize: "13px",
-        }}
-      >
-        #{ride.ride_id}
-      </span>
-
-      {/* Fecha */}
-      <div>
-        <div
-          style={{
-            color: "#ffffff",
-            fontSize: "14px",
-            fontWeight: 600,
-          }}
-        >
-          {formatDate(ride.started_at)}
-        </div>
+    <div className="ride-history-row">
+      <div className="ride-history-id">
+        <span>#</span>
+        {ride.ride_id}
       </div>
 
-      {/* Duración */}
-      <span
-        style={{
-          color: "#8da2b8",
-          fontSize: "13px",
-        }}
-      >
-        {formatDuration(
-          ride.stopped_time,
-          ride.moving_time
-        )}
-      </span>
+      <div className="ride-history-date">
+        <strong>
+          {formatDate(ride.started_at)}
+        </strong>
 
-      {/* Total */}
-      <span
-        style={{
-          color: "#ffffff",
-          fontSize: "14px",
-          fontWeight: 700,
-          textAlign: "right",
-        }}
-      >
+        <span>
+          Inicio del viaje
+        </span>
+      </div>
+
+      <div className="ride-history-duration">
+        <span className="ride-history-duration-icon">
+          ◷
+        </span>
+
+        <span>
+          {formatDuration(
+            ride.stopped_time,
+            ride.moving_time
+          )}
+        </span>
+      </div>
+
+      <div className="ride-history-total">
         {formatAmount(ride.total)}
-      </span>
+      </div>
     </div>
   );
 }
