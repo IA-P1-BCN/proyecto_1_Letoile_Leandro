@@ -1,4 +1,43 @@
 services:
+
+  mysql:
+    image: mysql:8.4
+
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: taxitech
+
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./docker/mysql/init.sql:/docker-entrypoint-initdb.d/init.sql:ro
+
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${MYSQL_PASSWORD}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+
+  backend:
+    build:
+      context: .
+      dockerfile: backend/Dockerfile
+
+    ports:
+      - "8000:8000"
+
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_USER: root
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_DATABASE: taxitech
+
+    depends_on:
+      mysql:
+        condition: service_healthy
+
+
   frontend:
     build:
       context: ./frontend
@@ -14,7 +53,12 @@ services:
     environment:
       NODE_ENV: development
 
+    depends_on:
+      - backend
+
     command: npm run dev
 
+
 volumes:
+  mysql_data:
   frontend_node_modules:
