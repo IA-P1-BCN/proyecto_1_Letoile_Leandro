@@ -4,9 +4,12 @@ from backend.domain.ride_record import RideRecord
 from backend.infrastructure.persistence.mysql_connection import (
     get_connection,
 )
+from backend.infrastructure.persistence.ride_repository_interface import (
+    RideRepositoryInterface,
+)
 
 
-class MySQLRideRepository:
+class MySQLRideRepository(RideRepositoryInterface):
 
     def save(self, ride_record):
         connection = get_connection()

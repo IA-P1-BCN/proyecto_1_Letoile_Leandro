@@ -2,9 +2,13 @@ import json
 from pathlib import Path
 
 from backend.domain.ride_record import RideRecord
+from backend.infrastructure.persistence.ride_repository_interface import (
+    RideRepositoryInterface,
+)
 
 
-class RideRepository:
+class RideRepository(RideRepositoryInterface):
+
     def __init__(self, file_path=None):
         if file_path is None:
             file_path = (
@@ -37,7 +41,19 @@ class RideRepository:
     def save(self, ride_record):
         rides = self._load()
 
-        rides.append(ride_record.to_dict())
+        next_ride_id = max(
+            (
+                int(ride["ride_id"])
+                for ride in rides
+                if ride.get("ride_id") is not None
+            ),
+            default=0
+        ) + 1
+
+        ride_data = ride_record.to_dict()
+        ride_data["ride_id"] = next_ride_id
+
+        rides.append(ride_data)
 
         self.file_path.write_text(
             json.dumps(
@@ -47,6 +63,8 @@ class RideRepository:
             ),
             encoding="utf-8"
         )
+
+        return next_ride_id
 
     def _load(self):
         try:

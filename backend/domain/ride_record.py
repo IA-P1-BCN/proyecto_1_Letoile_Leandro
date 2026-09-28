@@ -1,11 +1,10 @@
 from dataclasses import asdict, dataclass
-from datetime import datetime
 from typing import Any
 
 
 @dataclass
 class RideRecord:
-    ride_id: int
+    ride_id: int | None
     started_at: str
     finished_at: str
     stopped_time: float

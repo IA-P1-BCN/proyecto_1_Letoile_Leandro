@@ -6,6 +6,9 @@ from backend.infrastructure.logging.logger import TaximeterLogger
 from backend.infrastructure.persistence.mysql_ride_repository import (
     MySQLRideRepository,
 )
+from backend.infrastructure.persistence.ride_repository_interface import (
+    RideRepositoryInterface,
+)
 
 
 class Taximeter:
@@ -13,7 +16,7 @@ class Taximeter:
     def __init__(
         self,
         tariff_config=None,
-        ride_repository=None,
+        ride_repository: RideRepositoryInterface | None = None,
         logger=None
     ):
         self.ride = None
@@ -174,10 +177,8 @@ class Taximeter:
 
         total = stopped_cost + moving_cost
 
-        ride_id = self._get_next_ride_id()
-
         ride_record = RideRecord(
-            ride_id=ride_id,
+            ride_id=None,
             started_at=times["started_at"],
             finished_at=times["finished_at"],
             stopped_time=times["stopped_time"],
@@ -223,14 +224,3 @@ class Taximeter:
 
     def get_history(self):
         return self.ride_repository.get_all()
-
-    def _get_next_ride_id(self):
-        rides = self.ride_repository.get_all()
-
-        if not rides:
-            return 1
-
-        return max(
-            ride.ride_id
-            for ride in rides
-        ) + 1
