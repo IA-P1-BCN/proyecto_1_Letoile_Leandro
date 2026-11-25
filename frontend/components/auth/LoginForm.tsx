@@ -1,5 +1,6 @@
 "use client";
 
+import { API_URL } from "@/lib/api/config";
 import { FormEvent, useState } from "react";
 
 export default function LoginForm() {
@@ -18,7 +19,7 @@ export default function LoginForm() {
 
     try {
       const response = await fetch(
-        "http://localhost:8000/api/auth/login",
+        `${API_URL}/api/auth/login`,
         {
           method: "POST",
           headers: {

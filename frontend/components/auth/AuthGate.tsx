@@ -1,5 +1,6 @@
 "use client";
 
+import { API_URL } from "@/lib/api/config";
 import { useCallback, useEffect, useState } from "react";
 
 import Scene from "@/components/3d/Scene";
@@ -39,7 +40,7 @@ export default function AuthGate() {
     const checkSession = async () => {
       try {
         const response = await fetch(
-          "http://localhost:8000/api/auth/me",
+          `${API_URL}/api/auth/me`,
           {
             method: "GET",
             credentials: "include",
@@ -78,7 +79,7 @@ export default function AuthGate() {
 
     try {
       await fetch(
-        "http://localhost:8000/api/auth/logout",
+        `${API_URL}/api/auth/logout`,
         {
           method: "POST",
           credentials: "include",
